@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
+    "start": "cmd.exe /c SET DEBUG=backend-nodejs:* & npm run devstart",
     "devstart": "nodemon ./bin/www",
-    "serverstart": "DEBUG=express-locallibrary-tutorial:* npm run devstart"
+    "serverstart": "DEBUG=backend-nodejs:* npm run devstart"
   },
   "dependencies": {
     "async": "^3.2.1",
@@ -16,7 +16,8 @@
     "http-errors": "~1.6.3",
     "mongoose": "^5.13.7",
     "morgan": "~1.9.1",
-    "pug": "2.0.0-beta11"
+    "pug": "^3.0.2",
+    "validator": "^13.6.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.12"

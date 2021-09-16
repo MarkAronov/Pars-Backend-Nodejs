@@ -7,7 +7,6 @@ var SALT_WORK_FACTOR = 10;
 
 var UserSchema = new Schema({
   _name: { type: String, required: true, maxLength: 64, },
-  _id: { type: String, required: true, maxLength: 254, },
   _email: { type: String, required: true, maxLength: 254 },
   _password: { type: String, required: true, maxLength: 254 },
   _posts: { type: [{ type: Schema.Types.ObjectId, ref: 'Post' }] },
