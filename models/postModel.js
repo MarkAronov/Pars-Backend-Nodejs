@@ -1,23 +1,24 @@
 const mongoose = require('mongoose');
-
+const validator = require('validator');
 const Schema = mongoose.Schema;
 
 const PostSchema = new Schema(
   {
     _title: {
-      type: String, required: true, maxLength: 254,
-      validate(value) {
-        if (value.length < 1) throw new Error('Post title can not be empty');
-      }
+      type: String,
+      required: true,
+      maxLength: 254,
+      trim: true,
     },
     _content: {
-      type: String, required: true,
-      validate(value) {
-        if (value.length < 1) throw new Error('Post content can not be empty');
-      }
+      type: String,
+      required: true,
+      trim: true,
     },
     _user: {
-      type: Schema.Types.ObjectId, ref: 'User', required: true
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
     _parents: {
       type: [{ type: Schema.Types.ObjectId, ref: 'Post' }]
