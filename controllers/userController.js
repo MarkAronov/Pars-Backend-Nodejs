@@ -14,11 +14,10 @@ exports.user_detail = function (req, res) {
 exports.user_create_get = function (req, res) {
     const user = new UserModel(req.body)
     user.save().then((result) => {
-
-    }).catch((err) => {
-
+        res.status(201).send(user);
+    }).catch((error) => {
+        res.status(400).send(error)
     });
-    res.send(user);
 };
 
 // Handle User create on POST.
