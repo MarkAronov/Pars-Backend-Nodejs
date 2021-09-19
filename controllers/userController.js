@@ -1,5 +1,5 @@
 const User = require('../models/userModel');
-
+const UserModel = require('../models/userModel')
 // Display list of all Users.
 exports.user_list = function (req, res) {
     res.send('NOT IMPLEMENTED: User list');
@@ -12,7 +12,13 @@ exports.user_detail = function (req, res) {
 
 // Display User create form on GET.
 exports.user_create_get = function (req, res) {
-    res.send('NOT IMPLEMENTED: User create GET');
+    const user = new UserModel(req.body)
+    user.save().then((result) => {
+
+    }).catch((err) => {
+
+    });
+    res.send(user);
 };
 
 // Handle User create on POST.

@@ -13,7 +13,7 @@ const UserSchema = new Schema(
       maxLength: 64,
       trim: true,
       validate(value) {
-        if (validator.contains(value, "")) throw new Error('Username contains whitespace')
+        if (validator.contains(value, " ")) throw new Error('Username contains whitespace')
       }
     },
     _email: {
