@@ -31,7 +31,7 @@ const UserSchema = new Schema(
       required: true,
       maxLength: 254,
       validate(value) {
-        
+        console.log(validator.isStrongPassword(value, { minlength: 12}))
       }
     },
     _posts: {

@@ -1,35 +1,48 @@
 const express = require('express');
 const router = express.Router();
+const PostModel = require('../models/postModel');
 
-// Require controller module.
-const post_controller = require('../controllers/postController');
 
 /// POST ROUTES ///
 
-
 // GET request for list of all Post items.
-router.get('/all', post_controller.post_list);
-
-// GET request for creating a Post. NOTE This must come before routes that display Post (uses id).
-router.get('/create', post_controller.post_create_get);
+router.get('/all', async function (req, res) {
+    try {
+        const posts = await PostModel.find({});
+        return res.status(200).send(posts);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
 // POST request for creating Post.
-router.post('/create', post_controller.post_create_post);
+router.post('/create', async function (req, res) {
+    console.log(req.params);
+    res.send('NOT IMPLEMENTED: Post create GET');
+});
 
-// GET request to delete Post.
-router.get('/:id/delete', post_controller.post_delete_get);
-
-// POST request to delete Post.
-router.post('/:id/delete', post_controller.post_delete_post);
+// DELETE request to delete Post.
+router.delete('/delete/:id', async function (req, res) {
+    res.send('NOT IMPLEMENTED: Post delete GET');
+});
 
 // GET request to update Post.
-router.get('/:id/update', post_controller.post_update_get);
-
-// POST request to update Post.
-router.post('/:id/update', post_controller.post_update_post);
+router.patch('/update/:id', async function (req, res) {
+    res.send('NOT IMPLEMENTED: Post update GET');
+});
 
 // GET request for one Post.
-router.get('/:id', post_controller.post_detail);
+router.get('/:id', async function (req, res) {
+    try {
+        const post = await PostModel.findById(req.params.id);
+        if (!post) return res.status(404).send();
+        res.status(200).send(post);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
 
 module.exports = router;

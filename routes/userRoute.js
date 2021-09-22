@@ -1,34 +1,79 @@
 const express = require('express');
 const router = express.Router();
+const UserModel = require('../models/userModel')
 
-// Require controller module.
-const user_controller = require('../controllers/userController');
 
 /// USER ROUTES ///
 
 // GET request for list of all Users.
-router.get('/all', user_controller.user_list);
+router.get('/all', async function (req, res) {
+    try {
+        const users = await UserModel.find({});
+        return res.status(200).send(users);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
-// GET request for creating User. NOTE This must come before route for id (i.e. display user).
-router.get('/create', user_controller.user_create_get);
+// GET request for creating User.
+router.post('/create', async function (req, res) {
+    try {
+        let user = await UserModel.findOne({ "_email": req.body._email })
+        if (user) return res.status(400).send("Email");
+        user = await UserModel.findOne({ "_name": req.body._name })
+        if (user) return res.status(400).send("Username");
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
+    const newUser = new UserModel(req.body);
+    try {
+        await newUser.save()
+        res.status(201).send(newUser);
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
+});
 
-// POST request for creating User.
-router.post('/create', user_controller.user_create_post);
+// DELETE request to delete User.
+router.delete('/delete/:id', async function (req, res) {
+    try {
+        const user = await UserModel.findByIdAndDelete(req.params.id);
+        if (!user) return res.status(404).send();
+        res.status(200).send(user);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
-// GET request to delete User.
-router.get('/:id/delete', user_controller.user_delete_get);
-
-// POST request to delete User.
-router.post('/:id/delete', user_controller.user_delete_post);
-
-// GET request to update User.
-router.get('/:id/update', user_controller.user_update_get);
-
-// POST request to update User.
-router.post('/:id/update', user_controller.user_update_post);
+// PATCH request to update User.
+router.patch('/update/:id', async function (req, res) {
+    const updateKeys = Object.keys(req.body)
+    const userParams = ['_name', '_email', '_password', '_posts']
+    if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
+    try {
+        const user = await UserModel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        if (!user) return res.status(404).send();
+        res.status(200).send(user);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
 // GET request for one User.
-router.get('/:id', user_controller.user_detail);
-
+router.get('/:name', async function (req, res) {
+    try {
+        const user = await UserModel.findOne({ _name: req.params.name });
+        if (!user) return res.status(404).send();
+        res.status(200).send(user);
+    }
+    catch (e) {
+        res.status(500).send(e);
+    }
+});
 
 module.exports = router;
