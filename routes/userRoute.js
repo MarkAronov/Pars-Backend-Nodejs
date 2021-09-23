@@ -16,21 +16,24 @@ router.get('/all', async function (req, res) {
     }
 });
 
-// GET request for creating User.
-router.post('/create', async function (req, res) {
+router.post('/login', async function (req, res) {
     try {
-        let user = await UserModel.findOne({ "_email": req.body._email })
-        if (user) return res.status(400).send("Email");
-        user = await UserModel.findOne({ "_name": req.body._name })
-        if (user) return res.status(400).send("Username");
+        const user = await UserModel.verifyCredentials(req.body._email, req.body._password);
+        const token = await user.generateToken();
+        res.status(200).send({ user, token })
     }
     catch (e) {
-        res.status(400).send(e)
+        res.status(400).send(e);
     }
+});
+
+// POST request for creating User.
+router.post('/create', async function (req, res) {
     const newUser = new UserModel(req.body);
     try {
         await newUser.save()
-        res.status(201).send(newUser);
+        const token = await newUser.generateToken();
+        res.status(201).send({newUser, token});
     }
     catch (e) {
         res.status(400).send(e)

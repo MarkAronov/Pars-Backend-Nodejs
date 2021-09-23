@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 const validator = require('validator')
 const Schema = mongoose.Schema;
-
-const bcrypt = require('bcrypt');
-const SALT_WORK_FACTOR = 10;
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const UserSchema = new Schema(
   {
     _name: {
       type: String,
+      unique: true,
       required: true,
       maxLength: 64,
       trim: true,
@@ -18,6 +18,7 @@ const UserSchema = new Schema(
     },
     _email: {
       type: String,
+      unique: true,
       required: true,
       maxLength: 254,
       lowercase: true,
@@ -31,43 +32,58 @@ const UserSchema = new Schema(
       required: true,
       maxLength: 254,
       validate(value) {
-        console.log(validator.isStrongPassword(value, { minlength: 12}))
+        //console.log(validator.isStrongPassword(value, { minlength: 12 }))
       }
     },
     _posts: {
-      type: [{ type: Schema.Types.ObjectId, ref: 'Post' }]
+      type: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+      }]
     },
     _date_of_creation: {
-      type: Date
+      type: Date,
+      required: true,
+      default: new Date(),
     },
-  }
+    _tokens: [{
+      _token: {
+        type: String,
+        required: true,
+      }
+    }]
+  },
+
 );
 
-UserSchema.pre('save', function (next) {
+UserSchema.methods.generateToken = async function () {
+  const user = this
+  const _token = jwt.sign({ _id: user._id.toString() }, 'placebotoken', { expiresIn: '14d' })
+  user._tokens = user._tokens.concat({ _token })
+  await user.save()
+  return _token
+}
+
+UserSchema.statics.verifyCredentials = async function (_email, _password) {
+  const user = await User.findOne({ _email })
+  if (!user) throw new Error('Couldn\'t find user')
+
+  const match = await bcrypt.compare(_password, user._password)
+  if (!match) throw new Error('Incorrect password provided')
+  return user
+}
+
+UserSchema.pre('save', async function (next) {
   const user = this;
-  // only hash the password if it has been modified (or is new)
-  if (!user.isModified('_password')) return next();
 
-  // generate a salt
-  bcrypt.genSalt(SALT_WORK_FACTOR, function (err, salt) {
-    if (err) return next(err);
+  if (user.isModified('_password')) {
+    const hashedPassword = await bcrypt.hash(user._password, 8)
+    user._password = hashedPassword
+  }
 
-    // hash the password along with our new salt
-    bcrypt.hash(user._password, salt, function (err, hash) {
-      if (err) return next(err);
-
-      // override the cleartext password with the hashed one
-      user._password = hash;
-      next();
-    });
-  });
+  next()
 });
 
-UserSchema.methods.comparePassword = (candidatePassword, cb) => {
-  bcrypt.compare(candidatePassword, this._password, function (err, isMatch) {
-    if (err) return cb(err);
-    cb(null, isMatch);
-  })
-};
 //Export model
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.model('User', UserSchema)
+module.exports = User

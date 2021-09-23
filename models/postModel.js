@@ -21,13 +21,21 @@ const PostSchema = new Schema(
       required: true,
     },
     _parents: {
-      type: [{ type: Schema.Types.ObjectId, ref: 'Post' }]
+      type: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+      }]
     },
     _children: {
-      type: [{ type: Schema.Types.ObjectId, ref: 'Post' }]
+      type: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+      }]
     },
     _date_of_creation: {
-      type: Date
+      type: Date,
+      required: true,
+      default: new Date(),
     },
   }
 );
