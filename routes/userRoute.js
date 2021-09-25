@@ -33,7 +33,7 @@ router.post('/create', async function (req, res) {
     try {
         await newUser.save()
         const token = await newUser.generateToken();
-        res.status(201).send({newUser, token});
+        res.status(201).send({ newUser, token });
     }
     catch (e) {
         res.status(400).send(e)
@@ -48,7 +48,8 @@ router.delete('/delete/:id', async function (req, res) {
         res.status(200).send(user);
     }
     catch (e) {
-        res.status(500).send(e);
+        console.log(e)
+        res.status(500).send(e.toString());
     }
 });
 
@@ -63,7 +64,8 @@ router.patch('/update/:id', async function (req, res) {
         res.status(200).send(user);
     }
     catch (e) {
-        res.status(500).send(e);
+        console.log(e)
+        res.status(500).send(e.toString());
     }
 });
 
@@ -75,7 +77,8 @@ router.get('/:name', async function (req, res) {
         res.status(200).send(user);
     }
     catch (e) {
-        res.status(500).send(e);
+        console.log(e)
+        res.status(500).send(e.toString());
     }
 });
 

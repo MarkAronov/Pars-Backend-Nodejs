@@ -80,7 +80,6 @@ UserSchema.pre('save', async function (next) {
     const hashedPassword = await bcrypt.hash(user._password, 8)
     user._password = hashedPassword
   }
-
   next()
 });
 
