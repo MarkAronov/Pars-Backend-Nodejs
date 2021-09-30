@@ -1,21 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 const UserModel = require('../models/usersModel')
 
 
 /// USER ROUTES ///
 
 // GET request for list of all Users.
-router.get('/users', async function (req, res) {
-    try {
-        const users = await UserModel.find({});
-        return res.status(200).send(users);
-    }
-    catch (e) {
-        res.status(500).send(e);
-    }
+router.get('/users/me', auth, async function (req, res) {
+    return res.status(200).send(req.user);
 });
 
+// POST request for logging the user in.
 router.post('/users/login', async function (req, res) {
     try {
         const user = await UserModel.verifyCredentials(req.body._email, req.body._password);
@@ -23,7 +19,38 @@ router.post('/users/login', async function (req, res) {
         res.status(200).send({ user, token })
     }
     catch (e) {
-        res.status(400).send(e);
+        console.log(e)
+        res.status(400).send(e.toString());
+    }
+});
+
+// POST request for logging the user out.
+router.post('/users/logout', auth, async function (req, res) {
+    try {
+        req.user._tokens = req.user._tokens.filter((token) => {
+            return token._token !== req.token
+        })
+        await req.user.save()
+
+        res.status(200).send()
+    }
+    catch (e) {
+        console.log(e)
+        res.status(400).send(e.toString());
+    }
+});
+
+// POST request for logging the user out from all sessions.
+router.post('/users/logoutall', auth, async function (req, res) {
+    try {
+        req.user._tokens = []
+        await req.user.save()
+
+        res.status(200).send()
+    }
+    catch (e) {
+        console.log(e)
+        res.status(400).send(e.toString());
     }
 });
 
@@ -36,7 +63,8 @@ router.post('/users', async function (req, res) {
         res.status(201).send({ newUser, token });
     }
     catch (e) {
-        res.status(400).send(e)
+        console.log(e)
+        res.status(400).send(e.toString());
     }
 });
 
