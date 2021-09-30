@@ -12,7 +12,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_title\": \"testu\",\r\n    \"_content\": \"some NICE TESTS \",\r\n    \"_user_id\": \"614f26cc5af128f4a600b6bd\",\r\n    \"_edited\": false,\r\n    \"_parents_ids\": []\r\n}",
+					"raw": "{\r\n    \"_title\": \"testing  2\",\r\n    \"_content\": \"some TESTS 2\",\r\n    \"_user_id\": \"61534787f7d38db844ba67c3\",\r\n    \"_parents_ids\": [ \"6153bbe453d9f64503136903\", \"6153bbf153d9f6450313690a\", \"6153c41103ca99ad684af521\" ]\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -20,15 +20,14 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3000/post/create",
+					"raw": "http://localhost:3000/posts",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"post",
-						"create"
+						"posts"
 					]
 				}
 			},
@@ -40,14 +39,14 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/post/614e6e00eb471fc0129e6c52",
+					"raw": "http://localhost:3000/posts/614e6e00eb471fc0129e6c52",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"post",
+						"posts",
 						"614e6e00eb471fc0129e6c52"
 					]
 				}
@@ -61,7 +60,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_name\": \"HEEEEEEHEEE\"\r\n}",
+					"raw": "{\r\n    \"_title\": \"testing  4 updated\",\r\n    \"_content\": \"some TESTS 4 updated\",\r\n    \"_parents_ids\": [ \"6153bbf153d9f6450313690a\", \"6153c41103ca99ad684af521\" ]\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -69,16 +68,15 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3000/post/update/614b16d007ee572a13c01b14",
+					"raw": "http://localhost:3000/posts/6153bbe453d9f64503136903",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"post",
-						"update",
-						"614b16d007ee572a13c01b14"
+						"posts",
+						"6153bbe453d9f64503136903"
 					]
 				}
 			},
@@ -90,16 +88,15 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/post/delete/6149f2e5972a0ff6d667f9fd",
+					"raw": "http://localhost:3000/posts/6153bbe453d9f64503136903",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"post",
-						"delete",
-						"6149f2e5972a0ff6d667f9fd"
+						"posts",
+						"6153bbe453d9f64503136903"
 					]
 				}
 			},
@@ -111,15 +108,14 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/post/all",
+					"raw": "http://localhost:3000/posts",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3000",
 					"path": [
-						"post",
-						"all"
+						"posts"
 					]
 				}
 			},

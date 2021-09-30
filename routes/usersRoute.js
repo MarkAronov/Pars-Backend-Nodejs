@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const UserModel = require('../models/userModel')
+const UserModel = require('../models/usersModel')
 
 
 /// USER ROUTES ///
 
 // GET request for list of all Users.
-router.get('/all', async function (req, res) {
+router.get('/users', async function (req, res) {
     try {
         const users = await UserModel.find({});
         return res.status(200).send(users);
@@ -16,7 +16,7 @@ router.get('/all', async function (req, res) {
     }
 });
 
-router.post('/login', async function (req, res) {
+router.post('/users/login', async function (req, res) {
     try {
         const user = await UserModel.verifyCredentials(req.body._email, req.body._password);
         const token = await user.generateToken();
@@ -28,7 +28,7 @@ router.post('/login', async function (req, res) {
 });
 
 // POST request for creating User.
-router.post('/create', async function (req, res) {
+router.post('/users', async function (req, res) {
     const newUser = new UserModel(req.body);
     try {
         await newUser.save()
@@ -41,7 +41,7 @@ router.post('/create', async function (req, res) {
 });
 
 // DELETE request to delete User.
-router.delete('/delete/:id', async function (req, res) {
+router.delete('/users/:id', async function (req, res) {
     try {
         const user = await UserModel.findByIdAndDelete(req.params.id);
         if (!user) return res.status(404).send();
@@ -54,7 +54,7 @@ router.delete('/delete/:id', async function (req, res) {
 });
 
 // PATCH request to update User.
-router.patch('/update/:id', async function (req, res) {
+router.patch('/users/:id', async function (req, res) {
     const updateKeys = Object.keys(req.body)
     const userParams = ['_name', '_email', '_password', '_posts']
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
@@ -70,7 +70,7 @@ router.patch('/update/:id', async function (req, res) {
 });
 
 // GET request for one User.
-router.get('/:name', async function (req, res) {
+router.get('/users/:name', async function (req, res) {
     try {
         const user = await UserModel.findOne({ _name: req.params.name });
         if (!user) return res.status(404).send();

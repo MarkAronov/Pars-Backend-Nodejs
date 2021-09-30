@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const PostModel = require('../models/postModel');
-const UserModel = require('../models/userModel');
+const PostModel = require('../models/postsModel');
+const UserModel = require('../models/usersModel');
 
 /// POST ROUTES ///
 
 // GET request for list of all Post items.
-router.get('/all', async function (req, res) {
+router.get('/posts', async function (req, res) {
     try {
         const posts = await PostModel.find({});
         return res.status(200).send(posts);
@@ -19,7 +19,7 @@ router.get('/all', async function (req, res) {
 });
 
 // POST request for creating Post.
-router.post('/create', async function (req, res) {
+router.post('/posts', async function (req, res) {
     const newPost = new PostModel(req.body);
     newPost._edited = false;
     try {
@@ -50,7 +50,7 @@ router.post('/create', async function (req, res) {
 });
 
 // DELETE request to delete Post.
-router.delete('/delete/:id', async function (req, res) {
+router.delete('/posts/:id', async function (req, res) {
     try {
         const post = await PostModel.findByIdAndDelete(req.params.id);
         if (!post) return res.status(404).send();
@@ -83,7 +83,7 @@ router.delete('/delete/:id', async function (req, res) {
 });
 
 // GET request to update Post.
-router.patch('/update/:id', async function (req, res) {
+router.patch('/posts/:id', async function (req, res) {
     const updateKeys = Object.keys(req.body)
     const userParams = ['_title', '_content', '_parents_ids',]
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
@@ -133,7 +133,7 @@ router.patch('/update/:id', async function (req, res) {
 });
 
 // GET request for one Post.
-router.get('/:id', async function (req, res) {
+router.get('/posts/:id', async function (req, res) {
     try {
         const post = await PostModel.findById(req.params.id);
         if (!post) return res.status(404).send();
