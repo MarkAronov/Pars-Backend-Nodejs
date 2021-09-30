@@ -113,7 +113,6 @@ router.patch('/update/:id', async function (req, res) {
                 await formerParent.save()
             }
         }
-        console.log(currentParents)
         for (let i = 0; i < updatedParents.length; i++) {
             let newerParentId = updatedParents[i]
             if (currentParents.indexOf(newerParentId) === -1) {
