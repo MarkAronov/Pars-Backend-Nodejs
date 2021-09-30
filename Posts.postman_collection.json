@@ -12,7 +12,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"_name\": \"huhuhuhu\",\r\n    \"_email\": \"huhuh@uuuuuu.com\",\r\n    \"_password\": \"auuuuuuuuuuuuuuuuuuuu\"\r\n}",
+					"raw": "{\r\n    \"_title\": \"testu\",\r\n    \"_content\": \"some NICE TESTS \",\r\n    \"_user_id\": \"614f26cc5af128f4a600b6bd\",\r\n    \"_edited\": false,\r\n    \"_parents_ids\": []\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -35,12 +35,12 @@
 			"response": []
 		},
 		{
-			"name": "Read account",
+			"name": "Read post",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/post/id",
+					"raw": "http://localhost:3000/post/614e6e00eb471fc0129e6c52",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -48,14 +48,14 @@
 					"port": "3000",
 					"path": [
 						"post",
-						"id"
+						"614e6e00eb471fc0129e6c52"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "Update account",
+			"name": "Update post",
 			"request": {
 				"method": "PATCH",
 				"header": [],
@@ -85,7 +85,7 @@
 			"response": []
 		},
 		{
-			"name": "Delete account",
+			"name": "Delete post",
 			"request": {
 				"method": "DELETE",
 				"header": [],
@@ -106,7 +106,7 @@
 			"response": []
 		},
 		{
-			"name": "List accounts",
+			"name": "List posts",
 			"request": {
 				"method": "GET",
 				"header": [],

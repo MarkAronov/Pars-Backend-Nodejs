@@ -37,6 +37,10 @@ const PostSchema = new Schema(
       required: true,
       default: new Date(),
     },
+    _edited: {
+      type: Boolean,
+      required: true,
+    }
   }
 );
 

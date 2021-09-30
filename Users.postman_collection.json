@@ -40,7 +40,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/user/huhuhuhu",
+					"raw": "http://localhost:3000/user/huhuhuhffddu",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -48,7 +48,7 @@
 					"port": "3000",
 					"path": [
 						"user",
-						"huhuhuhu"
+						"huhuhuhffddu"
 					]
 				}
 			},
@@ -69,7 +69,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3000/user/update/614b16d007ee572a13c01b14",
+					"raw": "http://localhost:3000/user/update/614ccfa75c202fa1aef3d8c3",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -78,7 +78,7 @@
 					"path": [
 						"user",
 						"update",
-						"614b16d007ee572a13c01b14"
+						"614ccfa75c202fa1aef3d8c3"
 					]
 				}
 			},
@@ -90,7 +90,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/user/delete/614b22c8bb7775f59f767f17",
+					"raw": "http://localhost:3000/user/delete/614e58a51d2dc0f37d794420",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -99,7 +99,7 @@
 					"path": [
 						"user",
 						"delete",
-						"614b22c8bb7775f59f767f17"
+						"614e58a51d2dc0f37d794420"
 					]
 				}
 			},
@@ -126,7 +126,7 @@
 			"response": []
 		},
 		{
-			"name": "Login account",
+			"name": "Login to account",
 			"request": {
 				"method": "POST",
 				"header": [],

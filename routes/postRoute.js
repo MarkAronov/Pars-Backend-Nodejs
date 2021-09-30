@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const PostModel = require('../models/postModel');
 const UserModel = require('../models/userModel');
 
@@ -20,25 +21,26 @@ router.get('/all', async function (req, res) {
 // POST request for creating Post.
 router.post('/create', async function (req, res) {
     const newPost = new PostModel(req.body);
+    newPost._edited = false;
     try {
         const user = await UserModel.findById(req.body._user_id);
         if (!user) return res.status(404).send("no user by that id: " + req.body._user_id);
-        await user.save()
-        for (var i = 0; i < req.body._parents_ids.length; i++) {
-            var post_id = req.body._parents_ids[i]
-            const parent = await PostModel.findById(post_id);
-            if (!parent) return res.status(404).send("No parent by that id: " + post_id);
-            newPost._parents = newPost._parents.concat(parent)
-        }
-        await newPost.save()
-        for (var i = 0; i < req.body._parents_ids.length; i++) {
-            var post_id = req.body._parents_ids[i]
-            const parent = await PostModel.findById(post_id);
-            parent._children = parent._children.concat(newPost)
-            await parent.save()
+        let parents = req.body._parents_ids.slice()
+        for (let i = 0; i < parents.length; i++) {
+            const parent = await PostModel.findById(parents[i]);
+            if (!parent) return res.status(404).send("No parent by that id: " + parents[i]);
+            if (parent._id.toString() === newPost._id.toString()) return res.status(400).send("You cannot reply to yourself");
         }
         newPost._user = user
-        user._posts = (!user._posts.length) ? [newPost] : user._posts.concat(newPost);
+        for (let i = 0; i < parents.length; i++) {
+            const parent = await PostModel.findById(parents[i]);
+            newPost._parents = newPost._parents.concat(parent._id)
+            parent._children = parent._children.concat(newPost._id)
+            await parent.save()
+        }
+        await newPost.save()
+        user._posts = user._posts.concat(newPost._id);
+        await user.save()
         res.status(201).send(newPost);
     }
     catch (e) {
@@ -49,12 +51,86 @@ router.post('/create', async function (req, res) {
 
 // DELETE request to delete Post.
 router.delete('/delete/:id', async function (req, res) {
-    res.send('NOT IMPLEMENTED: Post delete');
+    try {
+        const post = await PostModel.findByIdAndDelete(req.params.id);
+        if (!post) return res.status(404).send();
+        const user = await UserModel.findById(post._user)
+        if (!user) return res.status(404).send()
+        user._posts.splice(user._posts.indexOf(post._id), 1)
+        await user.save()
+        for (let i = 0; i < post._parents.length; i++) {
+            let parentId = post._parents[i]._id
+            const formerParent = await PostModel.findById(parentId);
+            if (formerParent) {
+                formerParent._children.splice(formerParent._children.indexOf(post._id), 1)
+                await formerParent.save()
+            }
+        }
+        for (let i = 0; i < post._children.length; i++) {
+            let childId = post._children[i]._id
+            const formerChild = await PostModel.findById(childId);
+            if (formerChild) {
+                formerChild._parents.splice(formerChild._parents.indexOf(post._id), 1)
+                await formerChild.save()
+            }
+        }
+        res.status(200).send(post);
+    }
+    catch (e) {
+        console.log(e)
+        res.status(500).send(e.toString());
+    }
 });
 
 // GET request to update Post.
 router.patch('/update/:id', async function (req, res) {
-    res.send('NOT IMPLEMENTED: Post update');
+    const updateKeys = Object.keys(req.body)
+    const userParams = ['_title', '_content', '_parents_ids',]
+    if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
+    try {
+        const post = await PostModel.findById(req.params.id);
+        if (!post) return res.status(404).send();
+        let currentParents = post._parents.slice().map(value => value._id.toString())
+        let updatedParents = req.body._parents_ids.slice()
+        for (let i = 0; i < currentParents.length; i++) {
+            const currentParent = await PostModel.findById(currentParents[i]);
+            if (!currentParent) return res.status(404).send();
+        }
+        for (let i = 0; i < updatedParents.length; i++) {
+            const updatedParent = await PostModel.findById(updatedParents[i]);
+            if (!updatedParent) return res.status(404).send();
+            if (updatedParent._id.toString() === post._id.toString()) return res.status(400).send("You cannot reply to yourself");
+        }
+        post._title = req.body._title;
+        post._content = req.body._content;
+        post._edited = true;
+        for (let i = 0; i < post._parents.length; i++) {
+            let currParentId = post._parents[i]
+            if (updatedParents.indexOf(currParentId) === -1) {
+                currentParents.splice(currentParents.indexOf(currParentId), 1)
+                const formerParent = await PostModel.findById(currParentId);
+                formerParent._children.splice(formerParent._children.indexOf(post._id), 1)
+                await formerParent.save()
+            }
+        }
+        console.log(currentParents)
+        for (let i = 0; i < updatedParents.length; i++) {
+            let newerParentId = updatedParents[i]
+            if (currentParents.indexOf(newerParentId) === -1) {
+                currentParents.push(newerParentId)
+                const newerParent = await PostModel.findById(newerParentId);
+                newerParent._children = newerParent._children.concat(post._id)
+                await newerParent.save()
+            }
+        }
+        post._parents = currentParents.map(parent => mongoose.Types.ObjectId(parent))
+        await post.save()
+        res.status(200).send(post);
+    }
+    catch (e) {
+        console.log(e)
+        res.status(500).send(e.toString());
+    }
 });
 
 // GET request for one Post.
