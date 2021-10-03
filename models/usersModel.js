@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 const validator = require('validator')
-const Schema = mongoose.Schema;
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const Schema = mongoose.Schema
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
 const UserSchema = new Schema(
   {
@@ -24,7 +24,7 @@ const UserSchema = new Schema(
       lowercase: true,
       trim: true,
       validate(value) {
-        if (!validator.isEmail(value)) throw new Error('Invalid email');
+        if (!validator.isEmail(value)) throw new Error('Invalid email')
       }
     },
     _password: {
@@ -54,7 +54,7 @@ const UserSchema = new Schema(
     }]
   },
 
-);
+)
 
 UserSchema.methods.generateToken = async function () {
   const user = this
@@ -62,6 +62,15 @@ UserSchema.methods.generateToken = async function () {
   user._tokens = user._tokens.concat({ _token })
   await user.save()
   return _token
+}
+
+UserSchema.methods.toJSON = function () {
+  const user = this
+  const userObject = user.toObject()
+  delete userObject._password
+  delete userObject._tokens
+
+  return userObject
 }
 
 UserSchema.statics.verifyCredentials = async function (_email, _password) {
@@ -74,14 +83,14 @@ UserSchema.statics.verifyCredentials = async function (_email, _password) {
 }
 
 UserSchema.pre('save', async function (next) {
-  const user = this;
+  const user = this
 
   if (user.isModified('_password')) {
     const hashedPassword = await bcrypt.hash(user._password, 8)
     user._password = hashedPassword
   }
   next()
-});
+})
 
 //Export model
 const User = mongoose.model('User', UserSchema)

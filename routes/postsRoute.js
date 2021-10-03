@@ -1,86 +1,69 @@
-const express = require('express');
-const router = express.Router();
-const mongoose = require('mongoose');
-const PostModel = require('../models/postsModel');
-const UserModel = require('../models/usersModel');
+const express = require('express')
+const router = express.Router()
+const mongoose = require('mongoose')
+const auth = require('../middleware/auth')
+const PostModel = require('../models/postsModel')
+const UserModel = require('../models/usersModel')
 
 /// POST ROUTES ///
 
 // GET request for list of all Post items.
 router.get('/posts', async function (req, res) {
     try {
-        const posts = await PostModel.find({});
-        return res.status(200).send(posts);
+        const posts = await PostModel.find({})
+        return res.status(200).send(posts)
     }
     catch (e) {
         console.log(e)
-        res.status(500).send(e);
+        res.status(500).send(e)
     }
-});
+})
 
 // POST request for creating Post.
-router.post('/posts', async function (req, res) {
-    const newPost = new PostModel(req.body);
-    newPost._edited = false;
+router.post('/posts', auth, async function (req, res) {
+const newPost = new PostModel({...req.body, _user: req.user._id})
+    newPost._edited = false
     try {
-        const user = await UserModel.findById(req.body._user_id);
-        if (!user) return res.status(404).send("no user by that id: " + req.body._user_id);
         let parents = req.body._parents_ids.slice()
         for (let i = 0; i < parents.length; i++) {
-            const parent = await PostModel.findById(parents[i]);
-            if (!parent) return res.status(404).send("No parent by that id: " + parents[i]);
-            if (parent._id.toString() === newPost._id.toString()) return res.status(400).send("You cannot reply to yourself");
+            const parent = await PostModel.findById(parents[i])
+            if (!parent) return res.status(404).send("No parent by that id: " + parents[i])
+            if (parent._id.toString() === newPost._id.toString()) return res.status(400).send("You cannot reply to yourself")
         }
-        newPost._user = user
         for (let i = 0; i < parents.length; i++) {
-            const parent = await PostModel.findById(parents[i]);
+            const parent = await PostModel.findById(parents[i])
             newPost._parents = newPost._parents.concat(parent._id)
             parent._children = parent._children.concat(newPost._id)
             await parent.save()
         }
         await newPost.save()
-        user._posts = user._posts.concat(newPost._id);
-        await user.save()
-        res.status(201).send(newPost);
+        req.user._posts = req.user._posts.concat(newPost._id)
+        await req.user.save()
+        res.status(201).send(newPost)
     }
     catch (e) {
         console.log(e)
         res.status(400).send(e.toString())
     }
-});
+})
 
 // DELETE request to delete Post.
 router.delete('/posts/:id', async function (req, res) {
     try {
-        const post = await PostModel.findByIdAndDelete(req.params.id);
-        if (!post) return res.status(404).send();
+        const post = await PostModel.findByIdAndDelete(req.params.id)
+        if (!post) return res.status(404).send()
         const user = await UserModel.findById(post._user)
         if (!user) return res.status(404).send()
         user._posts.splice(user._posts.indexOf(post._id), 1)
         await user.save()
-        for (let i = 0; i < post._parents.length; i++) {
-            let parentId = post._parents[i]._id
-            const formerParent = await PostModel.findById(parentId);
-            if (formerParent) {
-                formerParent._children.splice(formerParent._children.indexOf(post._id), 1)
-                await formerParent.save()
-            }
-        }
-        for (let i = 0; i < post._children.length; i++) {
-            let childId = post._children[i]._id
-            const formerChild = await PostModel.findById(childId);
-            if (formerChild) {
-                formerChild._parents.splice(formerChild._parents.indexOf(post._id), 1)
-                await formerChild.save()
-            }
-        }
-        res.status(200).send(post);
+        post.deleteRelations()
+        res.status(200).send(post)
     }
     catch (e) {
         console.log(e)
-        res.status(500).send(e.toString());
+        res.status(500).send(e.toString())
     }
-});
+})
 
 // GET request to update Post.
 router.patch('/posts/:id', async function (req, res) {
@@ -88,27 +71,27 @@ router.patch('/posts/:id', async function (req, res) {
     const userParams = ['_title', '_content', '_parents_ids',]
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
     try {
-        const post = await PostModel.findById(req.params.id);
-        if (!post) return res.status(404).send();
+        const post = await PostModel.findById(req.params.id)
+        if (!post) return res.status(404).send()
         let currentParents = post._parents.slice().map(value => value._id.toString())
         let updatedParents = req.body._parents_ids.slice()
         for (let i = 0; i < currentParents.length; i++) {
-            const currentParent = await PostModel.findById(currentParents[i]);
-            if (!currentParent) return res.status(404).send();
+            const currentParent = await PostModel.findById(currentParents[i])
+            if (!currentParent) return res.status(404).send()
         }
         for (let i = 0; i < updatedParents.length; i++) {
-            const updatedParent = await PostModel.findById(updatedParents[i]);
-            if (!updatedParent) return res.status(404).send();
-            if (updatedParent._id.toString() === post._id.toString()) return res.status(400).send("You cannot reply to yourself");
+            const updatedParent = await PostModel.findById(updatedParents[i])
+            if (!updatedParent) return res.status(404).send()
+            if (updatedParent._id.toString() === post._id.toString()) return res.status(400).send("You cannot reply to yourself")
         }
-        post._title = req.body._title;
-        post._content = req.body._content;
-        post._edited = true;
+        post._title = req.body._title
+        post._content = req.body._content
+        post._edited = true
         for (let i = 0; i < post._parents.length; i++) {
             let currParentId = post._parents[i]
             if (updatedParents.indexOf(currParentId) === -1) {
                 currentParents.splice(currentParents.indexOf(currParentId), 1)
-                const formerParent = await PostModel.findById(currParentId);
+                const formerParent = await PostModel.findById(currParentId)
                 formerParent._children.splice(formerParent._children.indexOf(post._id), 1)
                 await formerParent.save()
             }
@@ -117,33 +100,33 @@ router.patch('/posts/:id', async function (req, res) {
             let newerParentId = updatedParents[i]
             if (currentParents.indexOf(newerParentId) === -1) {
                 currentParents.push(newerParentId)
-                const newerParent = await PostModel.findById(newerParentId);
+                const newerParent = await PostModel.findById(newerParentId)
                 newerParent._children = newerParent._children.concat(post._id)
                 await newerParent.save()
             }
         }
         post._parents = currentParents.map(parent => mongoose.Types.ObjectId(parent))
         await post.save()
-        res.status(200).send(post);
+        res.status(200).send(post)
     }
     catch (e) {
         console.log(e)
-        res.status(500).send(e.toString());
+        res.status(500).send(e.toString())
     }
-});
+})
 
 // GET request for one Post.
 router.get('/posts/:id', async function (req, res) {
     try {
-        const post = await PostModel.findById(req.params.id);
-        if (!post) return res.status(404).send();
-        res.status(200).send(post);
+        const post = await PostModel.findById(req.params.id)
+        if (!post) return res.status(404).send()
+        res.status(200).send(post)
     }
     catch (e) {
         console.log(e)
-        res.status(500).send(e.toString());
+        res.status(500).send(e.toString())
     }
-});
+})
 
 
-module.exports = router;
+module.exports = router
