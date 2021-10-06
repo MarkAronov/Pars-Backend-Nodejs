@@ -21,14 +21,14 @@ router.get('/posts', async function (req, res) {
 
 // POST request for creating Post.
 router.post('/posts', auth, async function (req, res) {
-const newPost = new PostModel({...req.body, _user: req.user._id})
+    const newPost = new PostModel({ ...req.body, _user: req.user._id })
     newPost._edited = false
     try {
         let parents = req.body._parents_ids.slice()
         for (let i = 0; i < parents.length; i++) {
             const parent = await PostModel.findById(parents[i])
-            if (!parent) return res.status(404).send("No parent by that id: " + parents[i])
-            if (parent._id.toString() === newPost._id.toString()) return res.status(400).send("You cannot reply to yourself")
+            if (!parent) return res.status(404).send('No parent by that id: ' + parents[i])
+            if (parent._id.toString() === newPost._id.toString()) return res.status(400).send('You cannot reply to yourself')
         }
         for (let i = 0; i < parents.length; i++) {
             const parent = await PostModel.findById(parents[i])
@@ -37,7 +37,7 @@ const newPost = new PostModel({...req.body, _user: req.user._id})
             await parent.save()
         }
         await newPost.save()
-        req.user._posts = req.user._posts.concat(newPost._id)
+        // req.user._posts = req.user._posts.concat(newPost._id)
         await req.user.save()
         res.status(201).send(newPost)
     }
@@ -48,15 +48,15 @@ const newPost = new PostModel({...req.body, _user: req.user._id})
 })
 
 // DELETE request to delete Post.
-router.delete('/posts/:id', async function (req, res) {
+router.delete('/posts/:id', auth, async function (req, res) {
     try {
-        const post = await PostModel.findByIdAndDelete(req.params.id)
+        const post = await PostModel.findById(req.params.id)
         if (!post) return res.status(404).send()
-        const user = await UserModel.findById(post._user)
-        if (!user) return res.status(404).send()
-        user._posts.splice(user._posts.indexOf(post._id), 1)
-        await user.save()
+        if (post._user._id.toString() !== req.user._id.toString()) return res.status(403).send('You are not allowed to delete this post')
+        // req.user._posts.splice(req.user._posts.indexOf(post._id), 1)
+        await req.user.save()
         post.deleteRelations()
+        post.remove()
         res.status(200).send(post)
     }
     catch (e) {
@@ -66,13 +66,15 @@ router.delete('/posts/:id', async function (req, res) {
 })
 
 // GET request to update Post.
-router.patch('/posts/:id', async function (req, res) {
+router.patch('/posts/:id', auth, async function (req, res) {
     const updateKeys = Object.keys(req.body)
     const userParams = ['_title', '_content', '_parents_ids',]
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
     try {
         const post = await PostModel.findById(req.params.id)
         if (!post) return res.status(404).send()
+        if (post._user._id.toString() !== req.user._id.toString()) return res.status(403).send('You are not allowed to change this post')
+
         let currentParents = post._parents.slice().map(value => value._id.toString())
         let updatedParents = req.body._parents_ids.slice()
         for (let i = 0; i < currentParents.length; i++) {
@@ -82,7 +84,7 @@ router.patch('/posts/:id', async function (req, res) {
         for (let i = 0; i < updatedParents.length; i++) {
             const updatedParent = await PostModel.findById(updatedParents[i])
             if (!updatedParent) return res.status(404).send()
-            if (updatedParent._id.toString() === post._id.toString()) return res.status(400).send("You cannot reply to yourself")
+            if (updatedParent._id.toString() === post._id.toString()) return res.status(400).send('You cannot reply to yourself')
         }
         post._title = req.body._title
         post._content = req.body._content

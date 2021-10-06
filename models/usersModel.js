@@ -13,7 +13,7 @@ const UserSchema = new Schema(
       maxLength: 64,
       trim: true,
       validate(value) {
-        if (validator.contains(value, " ")) throw new Error('Username contains whitespace')
+        if (validator.contains(value, ' ')) throw new Error('Username contains whitespace')
       }
     },
     _email: {
@@ -35,12 +35,12 @@ const UserSchema = new Schema(
         //console.log(validator.isStrongPassword(value, { minlength: 12 }))
       }
     },
-    _posts: {
-      type: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Post'
-      }]
-    },
+    // _posts: {
+    //   type: [{
+    //     type: Schema.Types.ObjectId,
+    //     ref: 'Post'
+    //   }]
+    // },
     _date_of_creation: {
       type: Date,
       required: true,
@@ -55,6 +55,12 @@ const UserSchema = new Schema(
   },
 
 )
+
+UserSchema.virtual('_posts', {
+  ref: 'Post',
+  localField: '_id',
+  foreignField: '_user'
+})
 
 UserSchema.methods.generateToken = async function () {
   const user = this

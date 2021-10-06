@@ -70,7 +70,8 @@ router.post('/users', async function (req, res) {
 // DELETE request to delete User.
 router.delete('/users/me', auth, async function (req, res) {
     try {
-        for (let i = 0; i < req.user._posts.length; i++) {
+        await req.user.populate('_posts')
+        for (let i = 0; i < await req.user._posts.length; i++) {
             let post = await PostModel.findById(req.user._posts[i])
             await post.deleteRelations()
             await post.remove()
@@ -87,7 +88,7 @@ router.delete('/users/me', auth, async function (req, res) {
 // PATCH request to update User.
 router.patch('/users/me', auth, async function (req, res) {
     const updateKeys = Object.keys(req.body)
-    const userParams = ['_name', '_email', '_password', '_posts']
+    const userParams = ['_name', '_email', '_password']
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
     try {
         updateKeys.forEach((key) => req.user[key] = req.body[key])
