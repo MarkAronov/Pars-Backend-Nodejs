@@ -2,13 +2,15 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require('cors')
 
 var indexRouter = require('./routes/indexRoute');
 var usersRouter = require('./routes/usersRoute');
 var postsRouter = require('./routes/postsRoute');
 
-var app = express();
+var app = express()
 
+app.use(cors())
 
 //Set up mongoose connection
 const mongoose = require('mongoose');

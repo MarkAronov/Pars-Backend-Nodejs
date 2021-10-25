@@ -4,40 +4,35 @@ const Schema = mongoose.Schema
 
 const PostSchema = new Schema(
   {
-    _title: {
+    title: {
       type: String,
       required: true,
       maxLength: 254,
       trim: true,
     },
-    _content: {
+    content: {
       type: String,
       required: true,
       trim: true,
     },
-    _user: {
+    user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    _parents: {
+    parents: {
       type: [{
         type: Schema.Types.ObjectId,
         ref: 'Post'
       }]
     },
-    _children: {
+    children: {
       type: [{
         type: Schema.Types.ObjectId,
         ref: 'Post'
       }]
     },
-    _date_of_creation: {
-      type: Date,
-      required: true,
-      default: new Date(),
-    },
-    _edited: {
+    edited: {
       type: Boolean,
       required: true,
     }
@@ -46,19 +41,19 @@ const PostSchema = new Schema(
 
 PostSchema.methods.deleteRelations = async function () {
   const post = this
-  for (let i = 0; i < post._parents.length; i++) {
-    let parentId = post._parents[i]._id
+  for (let i = 0; i < post.parents.length; i++) {
+    let parentId = post.parents[i].id
     const formerParent = await Post.findById(parentId)
     if (formerParent) {
-      formerParent._children.splice(formerParent._children.indexOf(post._id), 1)
+      formerParent.children.splice(formerParent.children.indexOf(post.id), 1)
       await formerParent.save()
     }
   }
-  for (let i = 0; i < post._children.length; i++) {
-    let childId = post._children[i]._id
+  for (let i = 0; i < post.children.length; i++) {
+    let childId = post.children[i].id
     const formerChild = await Post.findById(childId)
     if (formerChild) {
-      formerChild._parents.splice(formerChild._parents.indexOf(post._id), 1)
+      formerChild.parents.splice(formerChild.parents.indexOf(post.id), 1)
       await formerChild.save()
     }
   }

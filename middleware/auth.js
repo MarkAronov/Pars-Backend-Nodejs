@@ -5,7 +5,7 @@ const auth = async (req, res, next) => {
     try {
         const uncodedToken = req.header('Authorization').replace('Bearer ', '')
         const decodedToken = jwt.verify(uncodedToken, 'placebotoken')
-        const user = await UserModel.findOne({ _id: decodedToken._id, '_tokens._token': uncodedToken })
+        const user = await UserModel.findOne({ _id: decodedToken.id, 'tokens.token': uncodedToken })
         if (!user) throw new Error()
 
         req.token = uncodedToken
