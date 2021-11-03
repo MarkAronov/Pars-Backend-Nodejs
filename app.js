@@ -1,14 +1,13 @@
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors')
+const express = require('express');
+const path = require('path');
+const logger = require('morgan');
+const cors = require('cors')
 
-var indexRouter = require('./routes/indexRoute');
-var usersRouter = require('./routes/usersRoute');
-var postsRouter = require('./routes/postsRoute');
+const indexRouter = require('./routes/indexRoute');
+const usersRouter = require('./routes/usersRoute');
+const postsRouter = require('./routes/postsRoute');
 
-var app = express()
+const app = express()
 
 app.use(cors())
 
@@ -19,11 +18,9 @@ mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(indexRouter);

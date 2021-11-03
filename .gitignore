@@ -1,5 +1,6 @@
 /bin
 /node_modules
+/media
 s_key.mjs
 test.js
 node_modules
