@@ -3,7 +3,7 @@ const validator = require('validator')
 const Schema = mongoose.Schema
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const PostModel = require('../models/postsModel')
+const PostModel = require('./postsModel')
 
 const UserSchema = new Schema(
   {
@@ -67,7 +67,7 @@ UserSchema.virtual('posts', {
 
 UserSchema.methods.generateToken = async function () {
   const user = this
-  const token = jwt.sign({ id: user._id.toString() }, 'placebotoken', { expiresIn: '14d' })
+  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING, { expiresIn: '14d' })
   user.tokens = user.tokens.concat({ token })
   await user.save()
   return token
