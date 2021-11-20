@@ -5,6 +5,16 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const PostModel = require('./postsModel')
 
+const schemaOptions = {
+  toJSON: {
+    virtuals: true
+  },
+  toObject: {
+    vituals: true
+  },
+  timestamps: true,
+  id: false,
+}
 const UserSchema = new Schema(
   {
     name: {
@@ -49,19 +59,30 @@ const UserSchema = new Schema(
       }
     }],
     avatar: {
-      type: Buffer
+      type: String,
     },
-    settings: [{
-      type: String
-    }]
-  }, {
-    timestamps: true
-  }
+    backgroundImage: {
+      type: Buffer,
+    },
+    settings: {
+      hideLastSeen: {
+        type: Boolean,
+        required: true,
+        default: false,
+      },
+      hidePosts: {
+        type: Boolean,
+        required: true,
+        default: false,
+      }
+    }
+  },
+  schemaOptions
 )
 
 UserSchema.virtual('posts', {
   ref: 'Post',
-  localField: 'id',
+  localField: '_id',
   foreignField: 'user'
 })
 
@@ -73,12 +94,22 @@ UserSchema.methods.generateToken = async function () {
   return token
 }
 
-UserSchema.methods.toJSON = function () {
+UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   const user = this
-  const userObject = user.toObject()
-  delete userObject.password
-  delete userObject.tokens
+  const userObject = user.toObject({ virtuals: true })
 
+  delete userObject.password
+  delete userObject.__v
+  if (limitLevevl >= 1) {
+    delete userObject.tokens
+    delete userObject._id
+    delete userObject.settings
+    delete userObject.email
+  }
+  if (limitLevevl >= 2) {
+    delete userObject.createdAt
+    delete userObject.updatedAt
+  }
   return userObject
 }
 
@@ -94,9 +125,8 @@ UserSchema.statics.verifyCredentials = async function (email, password) {
 UserSchema.pre('remove', async function (next) {
   const user = this
   await user.populate('posts')
-  for (let i = 0; i < await user.posts.length; i++) {
-    let post = await PostModel.findById(user.posts[i])
-    await post.deleteRelations()
+  for (let postID of user.posts) {
+    let post = await PostModel.findById(postID)
     await post.remove()
   }
   next()
@@ -104,7 +134,6 @@ UserSchema.pre('remove', async function (next) {
 
 UserSchema.pre('save', async function (next) {
   const user = this
-
   if (user.isModified('password')) {
     const hashedPassword = await bcrypt.hash(user.password, 8)
     user.password = hashedPassword

@@ -3,16 +3,25 @@ const router = express.Router()
 const multer = require('multer')
 const auth = require('../middleware/auth')
 const UserModel = require('../models/usersModel')
-const PostModel = require('../models/postsModel')
-
+const crypto = require("crypto");
 
 /// MULTER SETTINGS ///
 const megabyte = 1000000
 
-const upload = multer({
+const avatarUpload = multer({
     limits: {
         fileSize: 10 * megabyte,
+        files: 1,
     },
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, './media/avatars')
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = crypto.randomBytes(16).toString('hex')
+            cb(null, file.fieldname + '-' + req.user._id + '-' + Date.now() + '-' + uniqueSuffix)
+        }
+    }),
     fileFilter(req, file, callback) {
         if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
             return callback(new Error('The only formats allowed are PNG, JPG and GIF'))
@@ -21,12 +30,18 @@ const upload = multer({
     },
 })
 
-router.post('/users/me/avatar', auth, upload.single('avatar'), async function (req, res) {
-    req.user.avatar = req.file.buffer
-    await req.user.save()
+router.post('/users/me/avatar', auth, avatarUpload.single('avatar'), async function (req, res) {
+    // req.user.avatar = req.file.filename
+    // await req.user.save()
+    console.log(req.file.filename)
     res.status(200).send()
 }, (error, req, res, next) => {
     res.status(400).send({ error: error.message })
+})
+
+router.get('/users/me/avatar', auth, async (req, res) => {
+    // req.user.avatar
+    res.status(200).send()
 })
 
 router.delete('/users/me/avatar', auth, async (req, res) => {
@@ -44,7 +59,7 @@ router.get('/users/', auth, async function (req, res) {
         return res.status(200).send(users);
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(500).send(e.toString())
     }
 })
@@ -54,10 +69,20 @@ router.get('/users/:name', auth, async function (req, res) {
     try {
         const user = await UserModel.findOne({ name: req.params.name })
         if (!user) return res.status(404).send()
-        res.status(200).send(user)
+        if (!user.settings.hidePosts) {
+            await user.populate('posts')
+        }
+        if (user._id.equals(req.user._id)) {
+            console.log(user.toLimitedJSON(1).id)
+            res.status(200).send(user.toLimitedJSON(1))
+        }
+        else {
+            console.log(user.toLimitedJSON(2).id)
+            res.status(200).send(user.toLimitedJSON(2))
+        }
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(500).send(e.toString())
     }
 })
@@ -70,7 +95,7 @@ router.post('/users/login', async function (req, res) {
         res.status(200).send({ user, token })
     }
     catch (e) {
-        console.log(e.toString())
+        //console.log(e.toString())
         res.status(400).send(e.toString())
     }
 })
@@ -82,11 +107,10 @@ router.post('/users/logout', auth, async function (req, res) {
             return token.token !== req.token
         })
         await req.user.save()
-
         res.status(200).send()
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(400).send(e.toString())
     }
 })
@@ -100,21 +124,22 @@ router.post('/users/logoutall', auth, async function (req, res) {
         res.status(200).send()
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(400).send(e.toString())
     }
 })
 
 // POST request for creating User.
 router.post('/users', async function (req, res) {
-    const newUser = new UserModel(req.body)
+
+    const user = new UserModel(req.body)
     try {
-        await newUser.save()
-        const token = await newUser.generateToken()
-        res.status(201).send({ newUser, token })
+        await user.save()
+        const token = await user.generateToken()
+        res.status(201).send({ user, token })
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(400).send(e.toString())
     }
 })
@@ -126,7 +151,7 @@ router.delete('/users/me', auth, async function (req, res) {
         res.status(200).send(req.user)
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(500).send(e.toString())
     }
 })
@@ -142,7 +167,7 @@ router.patch('/users/me', auth, async function (req, res) {
         res.status(200).send(req.user)
     }
     catch (e) {
-        console.log(e)
+        //console.log(e)
         res.status(400).send(e.toString())
     }
 })
