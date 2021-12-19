@@ -27,6 +27,23 @@ const UserSchema = new Schema(
         if (validator.contains(value, ' ')) throw new Error('Username contains whitespace')
       }
     },
+    displayName: {
+      type: String,
+      unique: false,
+      required: false,
+      maxLength: 200,
+      trim: true,
+      validate(value) {
+        if (validator.contains(value, ' ')) throw new Error('Displayname contains whitespace')
+      }
+    },
+    bio: {
+      type: String,
+      unique: false,
+      required: false,
+      maxLength: 400,
+      trim: true,
+    },
     email: {
       type: String,
       unique: true,
@@ -60,9 +77,10 @@ const UserSchema = new Schema(
     }],
     avatar: {
       type: String,
+      default: null,
     },
     backgroundImage: {
-      type: Buffer,
+      type: String,
     },
     settings: {
       hideLastSeen: {
@@ -74,7 +92,8 @@ const UserSchema = new Schema(
         type: Boolean,
         required: true,
         default: false,
-      }
+      },
+      
     }
   },
   schemaOptions
@@ -98,6 +117,7 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   const user = this
   const userObject = user.toObject({ virtuals: true })
 
+  delete userObject.avatar
   delete userObject.password
   delete userObject.__v
   if (limitLevevl >= 1) {

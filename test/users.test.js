@@ -108,16 +108,6 @@ test('Should get own user profile', async () => {
         .expect(200)
 })
 
-test('Should get own user profile', async () => {
-    await request(app)
-        .get(`/users/${testUser.name}`)
-        .set(
-            'Authorization', `Bearer ${testUser.tokens[0].token}`
-        )
-        .send()
-        .expect(200)
-})
-
 test('Should not get own user profile without authorization', async () => {
     await request(app)
         .get(`/users/${testUser.name}`)

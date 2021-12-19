@@ -1,21 +1,28 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
+const path = require('path')
 const auth = require('../middleware/auth')
 const UserModel = require('../models/usersModel')
 const crypto = require("crypto");
+const fs = require('fs/promises');
 
 /// MULTER SETTINGS ///
 const megabyte = 1000000
 
-const avatarUpload = multer({
+const userMediaTypes = [
+    { name: 'avatar', maxCount: 1 },
+    { name: 'backgroundImage', maxCount: 1 }
+]
+
+const userMediaUpload = multer({
     limits: {
         fileSize: 10 * megabyte,
         files: 1,
     },
     storage: multer.diskStorage({
         destination: function (req, file, cb) {
-            cb(null, './media/avatars')
+            cb(null, `./media/${file.fieldname}s`)
         },
         filename: function (req, file, cb) {
             const uniqueSuffix = crypto.randomBytes(16).toString('hex')
@@ -30,24 +37,76 @@ const avatarUpload = multer({
     },
 })
 
-router.post('/users/me/avatar', auth, avatarUpload.single('avatar'), async function (req, res) {
-    // req.user.avatar = req.file.filename
-    // await req.user.save()
-    console.log(req.file.filename)
+router.post('/users/me/:mediatype', auth, userMediaUpload.fields(userMediaTypes), async (req, res) => {
+    const mediaType = req.params.mediatype
+    if (mediaType !== "avatar" && mediaType !== "backgroundImage") return res.status(400).send()
+    console.log(req.files)
+    if (mediaType === "avatar") {
+        if (req.user.avatar) {
+            await fs.unlink(path.join(__dirname, `../../media/${mediaType}s/${req.user.avatar}`))
+        }
+        req.user.avatar = req.files.avatar[0].filename
+    }
+    if (mediaType === "backgroundImage") {
+        if (req.user.backgroundImage) {
+            await fs.unlink(path.join(__dirname, `../../media/${mediaType}s/${req.user.backgroundImage}`))
+        }
+        req.user.backgroundImage = req.files.backgroundImage[0].filename
+    }
+    await req.user.save()
+    let filePath = path.join(__dirname, `../../media/${mediaType}s/${req.files.filename}`);
+    res.status(200).sendFile(filePath)
     res.status(200).send()
 }, (error, req, res, next) => {
+    console.log(error)
     res.status(400).send({ error: error.message })
 })
 
-router.get('/users/me/avatar', auth, async (req, res) => {
-    // req.user.avatar
-    res.status(200).send()
+router.get('/users/:name/:mediatype', auth, async (req, res) => {
+    try {
+        const mediaType = req.params.mediatype
+        if (mediaType !== "avatar" && mediaType !== "backgroundImage") return res.status(400).send()
+        const user = await UserModel.findOne({ name: req.params.name })
+        if (!user) return res.status(404).send()
+
+        if (user.avatar && mediaType === "avatar") {
+            let filePath = path.join(__dirname, `../../media/${mediaType}s/${user.avatar}`);
+            res.status(200).sendFile(filePath)
+        }
+        else if (user.backgroundImage && mediaType === "backgroundImage") {
+            let filePath = path.join(__dirname, `../../media/${mediaType}s/${user.backgroundImage}`);
+            res.status(200).sendFile(filePath)
+        }
+        else {
+            res.status(404).send()
+        }
+    }
+    catch (e) {
+        //console.log(e)
+        res.status(500).send(e.toString())
+    }
 })
 
-router.delete('/users/me/avatar', auth, async (req, res) => {
-    req.user.avatar = undefined
-    await req.user.save()
-    res.status(200).send()
+router.delete('/users/me/:mediatype', auth, async (req, res) => {
+    try {
+        const mediaType = req.params.mediatype
+        if (mediaType !== "avatar" && mediaType !== "backgroundImage") return res.status(400).send()
+        if (req.user.avatar && mediaType === "avatar") {
+            await fs.unlink(path.join(__dirname, `../../media/${mediaType}s/${req.user.avatar}`))
+            req.user.avatar = null
+            await req.user.save()
+        }
+        if (req.user.backgroundImage && mediaType === "backgroundImage") {
+            await fs.unlink(path.join(__dirname, `../../media/${mediaType}s/${req.user.backgroundImage}`))
+            req.user.backgroundImage = null
+            await req.user.save()
+        }
+        res.status(200).send()
+    }
+    catch (e) {
+        //console.log(e)
+        res.status(500).send(e.toString())
+    }
 })
 
 /// USER ROUTES ///
@@ -73,11 +132,9 @@ router.get('/users/:name', auth, async function (req, res) {
             await user.populate('posts')
         }
         if (user._id.equals(req.user._id)) {
-            console.log(user.toLimitedJSON(1).id)
             res.status(200).send(user.toLimitedJSON(1))
         }
         else {
-            console.log(user.toLimitedJSON(2).id)
             res.status(200).send(user.toLimitedJSON(2))
         }
     }
@@ -90,8 +147,9 @@ router.get('/users/:name', auth, async function (req, res) {
 // POST request for logging the user in.
 router.post('/users/login', async function (req, res) {
     try {
-        const user = await UserModel.verifyCredentials(req.body.email, req.body.password)
-        const token = await user.generateToken()
+        const userToLimit = await UserModel.verifyCredentials(req.body.email, req.body.password)
+        const token = await userToLimit.generateToken()
+        const user = userToLimit.toLimitedJSON(1)
         res.status(200).send({ user, token })
     }
     catch (e) {
