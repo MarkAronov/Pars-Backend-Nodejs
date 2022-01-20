@@ -17,7 +17,7 @@ const schemaOptions = {
 }
 const UserSchema = new Schema(
   {
-    name: {
+    username: {
       type: String,
       unique: true,
       required: true,
@@ -25,23 +25,22 @@ const UserSchema = new Schema(
       trim: true,
       validate(value) {
         if (validator.contains(value, ' ')) throw new Error('Username contains whitespace')
+        if (!validator.isAlphanumeric(value)) throw new Error('Username contains none alphanumeric characters')
       }
     },
     displayName: {
       type: String,
-      unique: false,
-      required: false,
-      maxLength: 200,
+      maxLength: 128,
+      default: '',
       trim: true,
       validate(value) {
-        if (validator.contains(value, ' ')) throw new Error('Displayname contains whitespace')
+        if (validator.contains(value, ' ')) throw new Error('Displayusername contains whitespace')
       }
     },
     bio: {
       type: String,
-      unique: false,
-      required: false,
       maxLength: 400,
+      default: '',
       trim: true,
     },
     email: {
@@ -83,7 +82,7 @@ const UserSchema = new Schema(
       type: String,
     },
     settings: {
-      hideLastSeen: {
+      hideWhenMade: {
         type: Boolean,
         required: true,
         default: false,
@@ -93,7 +92,7 @@ const UserSchema = new Schema(
         required: true,
         default: false,
       },
-      
+
     }
   },
   schemaOptions
@@ -107,7 +106,7 @@ UserSchema.virtual('posts', {
 
 UserSchema.methods.generateToken = async function () {
   const user = this
-  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING, { expiresIn: '14d' })
+  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING, { expiresIn: '2 days' })
   user.tokens = user.tokens.concat({ token })
   await user.save()
   return token
@@ -117,7 +116,12 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   const user = this
   const userObject = user.toObject({ virtuals: true })
 
+  if (user.settings.hideWhenMade) {
+    delete userObject.createdAt
+  }
+  delete userObject.updatedAt
   delete userObject.avatar
+  delete userObject.backgroundImage
   delete userObject.password
   delete userObject.__v
   if (limitLevevl >= 1) {

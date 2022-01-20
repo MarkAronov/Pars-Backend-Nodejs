@@ -24,7 +24,7 @@ const avatarUpload = multer({
 // FUNCTIONS 
 function filterDupes(arr) {
     const map = new Map()
-    filtered = []
+    let filtered = []
     for (let a of arr) {
         if (map.get(a) === undefined) {
             map.set(a, true)
@@ -42,9 +42,9 @@ router.get('/posts', async function (req, res) {
         const posts = await PostModel.find({})
         return res.status(200).send(posts)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e)
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err)
     }
 })
 
@@ -79,9 +79,9 @@ router.post('/posts', auth, async function (req, res) {
             res.status(400).send('Invalid post')
         }
     }
-    catch (e) {
-        //console.log(e)
-        res.status(400).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(400).send(err.toString())
     }
 })
 
@@ -94,9 +94,9 @@ router.delete('/posts/:id', auth, async function (req, res) {
         post.remove()
         res.status(200).send(post)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
@@ -144,9 +144,9 @@ router.patch('/posts/:id', auth, async function (req, res) {
         await post.save()
         res.status(200).send(post)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
@@ -157,9 +157,9 @@ router.get('/posts/:id', async function (req, res) {
         if (!post) return res.status(404).send()
         res.status(200).send(post)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 

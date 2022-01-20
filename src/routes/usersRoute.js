@@ -6,13 +6,54 @@ const auth = require('../middleware/auth')
 const UserModel = require('../models/usersModel')
 const crypto = require("crypto");
 const fs = require('fs/promises');
+const validator = require('validator')
 
+// FUNCTIONS 
+function filterDupes(arr) {
+    const map = new Map()
+    let filtered = []
+    for (let a of arr) {
+        if (map.get(a) === undefined) {
+            map.set(a, true)
+            filtered = filtered.concat(a)
+        }
+    }
+    return filtered
+}
+
+function usernameChecker(str, nameErrors) {
+    if (validator.contains(str, ' ')) nameErrors.push(['validation', 'Username contains whitespace'])
+    if (!str.match(/^[0-9a-zA-Z\s]+$/)) nameErrors.push(['validation', 'Username contains none alphanumeric characters'])
+    return nameErrors
+}
+
+function emailChecker(str, emailErrors) {
+    if (!validator.isEmail(str)) emailErrors(['validation', 'Invalid email'])
+    return emailErrors
+}
+
+function passwordChecker(str, passwordErrors) {
+    const lowercase = str.match(/[a-z]/)
+    const uppercase = str.match(/[A-Z]/)
+    const numbers = str.match(/[0-9]/)
+
+    // Minimum: 10 chars | 1 Uppercase | 1 lowercase | 1 digit
+    if (str.length < 10) passwordErrors.push(['validation', "Password is less than 10 characters"])
+    if (!lowercase) passwordErrors.push(['validation', "Password must have at least one lowercase"])
+    if (!uppercase) passwordErrors.push(['validation', "Password must have at least one uppercase"])
+    if (!numbers) passwordErrors.push(['validation', "Password must have at least one digit"])
+
+    // Password entropy
+    const E = str.length * Math.log2(filterDupes(str.split('')).length)
+
+    return { passwordErrors, E }
+}
 /// MULTER SETTINGS ///
 const megabyte = 1000000
 
 const userMediaTypes = [
-    { name: 'avatar', maxCount: 1 },
-    { name: 'backgroundImage', maxCount: 1 }
+    { username: 'avatar', maxCount: 1 },
+    { username: 'backgroundImage', maxCount: 1 }
 ]
 
 const userMediaUpload = multer({
@@ -40,7 +81,7 @@ const userMediaUpload = multer({
 router.post('/users/me/:mediatype', auth, userMediaUpload.fields(userMediaTypes), async (req, res) => {
     const mediaType = req.params.mediatype
     if (mediaType !== "avatar" && mediaType !== "backgroundImage") return res.status(400).send()
-    console.log(req.files)
+
     if (mediaType === "avatar") {
         if (req.user.avatar) {
             await fs.unlink(path.join(__dirname, `../../media/${mediaType}s/${req.user.avatar}`))
@@ -62,11 +103,11 @@ router.post('/users/me/:mediatype', auth, userMediaUpload.fields(userMediaTypes)
     res.status(400).send({ error: error.message })
 })
 
-router.get('/users/:name/:mediatype', auth, async (req, res) => {
+router.get('/users/:username/:mediatype', auth, async (req, res) => {
     try {
         const mediaType = req.params.mediatype
         if (mediaType !== "avatar" && mediaType !== "backgroundImage") return res.status(400).send()
-        const user = await UserModel.findOne({ name: req.params.name })
+        const user = await UserModel.findOne({ username: req.params.username })
         if (!user) return res.status(404).send()
 
         if (user.avatar && mediaType === "avatar") {
@@ -81,9 +122,9 @@ router.get('/users/:name/:mediatype', auth, async (req, res) => {
             res.status(404).send()
         }
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
@@ -103,9 +144,9 @@ router.delete('/users/me/:mediatype', auth, async (req, res) => {
         }
         res.status(200).send()
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
@@ -117,16 +158,16 @@ router.get('/users/', auth, async function (req, res) {
         const users = await UserModel.find({});
         return res.status(200).send(users);
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
 //GET request for one User.
-router.get('/users/:name', auth, async function (req, res) {
+router.get('/users/:username', auth, async function (req, res) {
     try {
-        const user = await UserModel.findOne({ name: req.params.name })
+        const user = await UserModel.findOne({ username: req.params.username })
         if (!user) return res.status(404).send()
         if (!user.settings.hidePosts) {
             await user.populate('posts')
@@ -138,23 +179,28 @@ router.get('/users/:name', auth, async function (req, res) {
             res.status(200).send(user.toLimitedJSON(2))
         }
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
 // POST request for logging the user in.
 router.post('/users/login', async function (req, res) {
+    const errorMap = new Map([
+        ['email', 'Invaid email'],
+        ['password', 'Incorrect password'],
+    ]);
     try {
         const userToLimit = await UserModel.verifyCredentials(req.body.email, req.body.password)
         const token = await userToLimit.generateToken()
         const user = userToLimit.toLimitedJSON(1)
         res.status(200).send({ user, token })
     }
-    catch (e) {
-        //console.log(e.toString())
-        res.status(400).send(e.toString())
+    catch (err) {
+        //console.log(err.toString())
+        const errorField = err.toString().replace('Error: ', '')
+        res.status(400).send({ [errorField]: errorMap.get(errorField) })
     }
 })
 
@@ -167,9 +213,9 @@ router.post('/users/logout', auth, async function (req, res) {
         await req.user.save()
         res.status(200).send()
     }
-    catch (e) {
-        //console.log(e)
-        res.status(400).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(400).send(err.toString())
     }
 })
 
@@ -181,24 +227,63 @@ router.post('/users/logoutall', auth, async function (req, res) {
 
         res.status(200).send()
     }
-    catch (e) {
-        //console.log(e)
-        res.status(400).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(400).send(err.toString())
     }
 })
 
 // POST request for creating User.
 router.post('/users', async function (req, res) {
-
-    const user = new UserModel(req.body)
-    try {
-        await user.save()
-        const token = await user.generateToken()
-        res.status(201).send({ user, token })
+    let errors = {
+        username: [],
+        email: [],
+        password: [],
     }
-    catch (e) {
-        //console.log(e)
-        res.status(400).send(e.toString())
+    let passwordEntropy
+    let checkUser;
+    let userData = req.body
+
+    userData.displayName = userData.username
+
+    checkUser = await UserModel.findOne({ username: userData.username })
+    if (checkUser) errors.username.push(['dupe', "Name is already taken"])
+    else errors.username = usernameChecker(userData.username, errors.username)
+
+    checkUser = await UserModel.findOne({ email: userData.email })
+    if (checkUser) errors.email.push(['dupe', "Email is already taken"])
+    else errors.email = emailChecker(userData.email, errors.email)
+
+    const { passwordErrors, E } = passwordChecker(userData.password, errors.password)
+    errors.password = passwordErrors;
+    passwordEntropy = E;
+
+    const errorList = Object.values(errors)
+    for (let i = 0; i < errorList.length; i++) {
+        if (errorList[i].length !== 0) return res.status(400).send(errors)
+    }
+
+    try {
+        const createdUser = new UserModel(userData)
+        await createdUser.save()
+        const user = createdUser.toLimitedJSON(2)
+        const token = await createdUser.generateToken()
+        res.status(201).send({ user, token, passwordEntropy })
+    }
+    catch (err) {
+        // console.log(err)
+        // if (err && err.code === 11000) {
+        //     if (err.keyPattern.username) {
+        //         return res.status(400).send({ "username": "dupe" })
+        //     }
+        //     if (err.keyPattern.email) {
+        //         return res.status(400).send({ "email": "dupe" })
+        //     }
+        //     return res.status(400).send(err)
+        // }
+        // else {
+        res.status(400).send()
+        // }
     }
 })
 
@@ -208,25 +293,25 @@ router.delete('/users/me', auth, async function (req, res) {
         await req.user.remove()
         res.status(200).send(req.user)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(500).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(500).send(err.toString())
     }
 })
 
 // PATCH request to update User.
 router.patch('/users/me', auth, async function (req, res) {
     const updateKeys = Object.keys(req.body)
-    const userParams = ['name', 'email', 'password']
+    const userParams = ['username', 'email', 'password']
     if (!updateKeys.every((key) => userParams.includes(key))) return res.status(400).send()
     try {
         updateKeys.forEach((key) => req.user[key] = req.body[key])
         await req.user.save()
         res.status(200).send(req.user)
     }
-    catch (e) {
-        //console.log(e)
-        res.status(400).send(e.toString())
+    catch (err) {
+        //console.log(err)
+        res.status(400).send(err.toString())
     }
 })
 

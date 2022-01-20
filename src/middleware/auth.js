@@ -16,7 +16,7 @@ const auth = async (req, res, next) => {
         if (e.message === '401')
             res.status(401).send({ error: 'Authenticate first' })
         else
-            res.status(500).send()
+            res.status(500).send(e)
     }
 }
 
