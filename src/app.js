@@ -6,6 +6,7 @@ require('./database/mongoose')
 
 const usersRouter = require('./routes/usersRoute');
 const postsRouter = require('./routes/postsRoute');
+const miscRouter = require('./routes/miscRoutes');
 
 const app = express()
 
@@ -17,5 +18,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(usersRouter);
 app.use(postsRouter);
+app.use(miscRouter);
 
 module.exports = app;

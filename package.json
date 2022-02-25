@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "node ./src/bin/www",
-    "dev": "env-cmd -f ./config/dev.env nodemon ./src/bin/www",
+    "start": "env-cmd -f ./config/dev.env nodemon ./src/bin/www",
     "test": "env-cmd -f ./config/test.env jest --watchAll --detectOpenHandles --silent=false"
   },
   "jest": {
@@ -21,18 +20,43 @@
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.1.4",
     "mongoose": "^6.0.12",
+    "mongoose-unique-validator": "^2.0.3",
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
     "sharp": "^0.29.2",
     "validator": "^13.7.0"
   },
   "eslintConfig": {
-    "extends": "google"
+    "extends": "airbnb-base",
+    "env": {
+      "es6": true,
+      "browser": true
+    },
+    "rules": {
+      "brace-style": [
+        "error",
+        "stroustrup"
+      ],
+      "comma-dangle": [
+        "error",
+        "never"
+      ],
+      "no-unused-vars": [
+        "warn"
+      ],
+      "no-var": [
+        "off"
+      ],
+      "one-var": [
+        "off"
+      ]
+    }
   },
   "devDependencies": {
     "env-cmd": "^10.1.0",
-    "eslint": "^8.5.0",
-    "eslint-config-google": "^0.14.0",
+    "eslint": "^8.8.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.4",
     "jest": "^27.3.1",
     "nodemon": "^2.0.14",
     "supertest": "^6.1.6"

@@ -11,7 +11,6 @@ const auth = async (req, res, next) => {
         req.token = uncodedToken
         req.user = user
         next()
-
     } catch (e) {
         if (e.message === '401')
             res.status(401).send({ error: 'Authenticate first' })

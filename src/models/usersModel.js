@@ -1,9 +1,13 @@
 const mongoose = require('mongoose')
-const validator = require('validator')
-const Schema = mongoose.Schema
+
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+var uniqueValidator = require('mongoose-unique-validator')
+
 const PostModel = require('./postsModel')
+const checkers = require('../funcs/checkers')
+const ErrorArray = require('../funcs/ErrorArray')
+
 
 const schemaOptions = {
   toJSON: {
@@ -15,43 +19,39 @@ const schemaOptions = {
   timestamps: true,
   id: false,
 }
-const UserSchema = new Schema(
+
+const UserSchema = new mongoose.Schema(
   {
     username: {
       type: String,
       unique: true,
       required: true,
-      maxLength: 64,
+      maxLength: [64, 'Username is longer than 64 characters'],
       trim: true,
-      validate(value) {
-        if (validator.contains(value, ' ')) throw new Error('Username contains whitespace')
-        if (!validator.isAlphanumeric(value)) throw new Error('Username contains none alphanumeric characters')
+      async validate(value) {
+        let usernameErrors = []
+        usernameErrors = checkers.usernameChecker(value)
+        if (usernameErrors.length !== 0) throw new ErrorArray(usernameErrors, '')
       }
     },
     displayName: {
       type: String,
-      maxLength: 128,
+      maxLength: [128, 'Display-Name is longer than 128 characters'],
       default: '',
       trim: true,
-      validate(value) {
-        if (validator.contains(value, ' ')) throw new Error('Displayusername contains whitespace')
-      }
-    },
-    bio: {
-      type: String,
-      maxLength: 400,
-      default: '',
-      trim: true,
+
     },
     email: {
       type: String,
       unique: true,
       required: true,
-      maxLength: 254,
+      maxLength: [254, 'Email is longer than 254 characters'],
       lowercase: true,
       trim: true,
-      validate(value) {
-        if (!validator.isEmail(value)) throw new Error('Invalid email')
+      async validate(value) {
+        let emailErrors = []
+        emailErrors = checkers.emailChecker(value)
+        if (emailErrors.length !== 0) throw new ErrorArray(emailErrors, '')
       }
     },
     password: {
@@ -59,8 +59,16 @@ const UserSchema = new Schema(
       required: true,
       maxLength: 254,
       validate(value) {
-        //console.log(validator.isStrongPassword(value, { minlength: 12 }))
+        let passwordErrorsList = []
+        passwordErrorsList = checkers.passwordChecker(value)
+        if (passwordErrorsList.length !== 0) throw new ErrorArray(passwordErrorsList, '')
       }
+    },
+    bio: {
+      type: String,
+      maxLength: [400, 'Bio is longer than 400 characters'],
+      default: '',
+      trim: true,
     },
     // posts: {
     //   type: [{
@@ -80,6 +88,7 @@ const UserSchema = new Schema(
     },
     backgroundImage: {
       type: String,
+      default: null,
     },
     settings: {
       hideWhenMade: {
@@ -93,10 +102,12 @@ const UserSchema = new Schema(
         default: false,
       },
 
-    }
+    },
+    formerPasswords: [String],
   },
   schemaOptions
 )
+
 
 UserSchema.virtual('posts', {
   ref: 'Post',
@@ -120,8 +131,6 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
     delete userObject.createdAt
   }
   delete userObject.updatedAt
-  delete userObject.avatar
-  delete userObject.backgroundImage
   delete userObject.password
   delete userObject.__v
   if (limitLevevl >= 1) {
@@ -132,18 +141,36 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   }
   if (limitLevevl >= 2) {
     delete userObject.createdAt
-    delete userObject.updatedAt
   }
   return userObject
 }
 
 UserSchema.statics.verifyCredentials = async function (email, password) {
   const user = await User.findOne({ email })
-  if (!user) throw new Error('email')
+  if (!user) {
+    throw new ErrorArray(['email', 'Invaid email'], 'VerificationError')
+  }
 
   const match = await bcrypt.compare(password, user.password)
-  if (!match) throw new Error('password')
+  if (!match) {
+    throw new ErrorArray(['password', 'Incorrect password'], 'VerificationError')
+  }
   return user
+}
+
+UserSchema.statics.verifyPassword = async function (user, password, newPassword = null) {
+  if (newPassword) {
+    for (let i = 0; i < user.formerPasswords.length; i++) {
+      const key = user.formerPasswords[i]
+      if (await bcrypt.compare(newPassword, key)) {
+        throw new ErrorArray(['password', 'Password was formally used, use another'], 'VerificationError')
+      }
+    }
+  }
+
+  const match = await bcrypt.compare(password, user.password)
+  if (!match) throw new ErrorArray(['password', 'Incorrect password'], 'VerificationError')
+  return
 }
 
 UserSchema.pre('remove', async function (next) {
@@ -160,10 +187,14 @@ UserSchema.pre('save', async function (next) {
   const user = this
   if (user.isModified('password')) {
     const hashedPassword = await bcrypt.hash(user.password, 8)
+    user.formerPasswords.push(hashedPassword)
     user.password = hashedPassword
   }
   next()
 })
+
+//Add any plug-ins there are
+UserSchema.plugin(uniqueValidator, { message: "dupe" });
 
 //Export model
 const User = mongoose.model('User', UserSchema)

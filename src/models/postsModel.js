@@ -1,6 +1,5 @@
 const mongoose = require('mongoose')
-const validator = require('validator')
-const Schema = mongoose.Schema
+
 
 const schemaOptions = {
   toJSON: {
@@ -9,7 +8,8 @@ const schemaOptions = {
   timestamps: true,
   id: false,
 }
-const PostSchema = new Schema(
+
+const PostSchema = new mongoose.Schema(
   {
     title: {
       type: String,
@@ -23,12 +23,12 @@ const PostSchema = new Schema(
       trim: true,
     },
     user: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
     mainPost: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Post',
       default: null,
     },
@@ -40,13 +40,13 @@ const PostSchema = new Schema(
     // },
     replyingParents: {
       type: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
       }]
     },
     replyingChildren: {
       type: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Post'
       }]
     },
