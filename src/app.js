@@ -1,16 +1,16 @@
 const express = require('express');
 const path = require('path');
-const cors = require('cors')
+const cors = require('cors');
 const logger = require('morgan');
-require('./database/mongoose')
+require('./database/mongoose');
 
 const usersRouter = require('./routes/usersRoute');
 const postsRouter = require('./routes/postsRoute');
 const miscRouter = require('./routes/miscRoutes');
 
-const app = express()
+const app = express();
 
-app.use(cors())
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

@@ -1,24 +1,23 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
-var uniqueValidator = require('mongoose-unique-validator')
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const uniqueValidator = require('mongoose-unique-validator');
 
-const PostModel = require('./postsModel')
-const checkers = require('../funcs/checkers')
-const ErrorArray = require('../funcs/ErrorArray')
-
+const PostModel = require('./postsModel');
+const checkers = require('../funcs/checkers');
+const ErrorArray = require('../funcs/ErrorArray');
 
 const schemaOptions = {
   toJSON: {
-    virtuals: true
+    virtuals: true,
   },
   toObject: {
-    vituals: true
+    vituals: true,
   },
   timestamps: true,
   id: false,
-}
+};
 
 const UserSchema = new mongoose.Schema(
   {
@@ -29,17 +28,17 @@ const UserSchema = new mongoose.Schema(
       maxLength: [64, 'Username is longer than 64 characters'],
       trim: true,
       async validate(value) {
-        let usernameErrors = []
-        usernameErrors = checkers.usernameChecker(value)
-        if (usernameErrors.length !== 0) throw new ErrorArray(usernameErrors, '')
-      }
+        let usernameErrors = [];
+        usernameErrors = checkers.usernameChecker(value);
+        if (usernameErrors.length !== 0)
+          throw new ErrorArray(usernameErrors, '');
+      },
     },
     displayName: {
       type: String,
       maxLength: [128, 'Display-Name is longer than 128 characters'],
       default: '',
       trim: true,
-
     },
     email: {
       type: String,
@@ -49,20 +48,21 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       async validate(value) {
-        let emailErrors = []
-        emailErrors = checkers.emailChecker(value)
-        if (emailErrors.length !== 0) throw new ErrorArray(emailErrors, '')
-      }
+        let emailErrors = [];
+        emailErrors = checkers.emailChecker(value);
+        if (emailErrors.length !== 0) throw new ErrorArray(emailErrors, '');
+      },
     },
     password: {
       type: String,
       required: true,
       maxLength: 254,
       validate(value) {
-        let passwordErrorsList = []
-        passwordErrorsList = checkers.passwordChecker(value)
-        if (passwordErrorsList.length !== 0) throw new ErrorArray(passwordErrorsList, '')
-      }
+        let passwordErrorsList = [];
+        passwordErrorsList = checkers.passwordChecker(value);
+        if (passwordErrorsList.length !== 0)
+          throw new ErrorArray(passwordErrorsList, '');
+      },
     },
     bio: {
       type: String,
@@ -76,12 +76,14 @@ const UserSchema = new mongoose.Schema(
     //     ref: 'Post'
     //   }]
     // },
-    tokens: [{
-      token: {
-        type: String,
-        required: true,
-      }
-    }],
+    tokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
     avatar: {
       type: String,
       default: null,
@@ -101,101 +103,115 @@ const UserSchema = new mongoose.Schema(
         required: true,
         default: false,
       },
-
     },
     formerPasswords: [String],
   },
   schemaOptions
-)
-
+);
 
 UserSchema.virtual('posts', {
   ref: 'Post',
   localField: '_id',
-  foreignField: 'user'
-})
+  foreignField: 'user',
+});
 
 UserSchema.methods.generateToken = async function () {
-  const user = this
-  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING, { expiresIn: '2 days' })
-  user.tokens = user.tokens.concat({ token })
-  await user.save()
-  return token
-}
+  const user = this;
+  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING, {
+    expiresIn: '2 days',
+  });
+  user.tokens = user.tokens.concat({ token });
+  await user.save();
+  return token;
+};
 
 UserSchema.methods.toLimitedJSON = function (limitLevevl) {
-  const user = this
-  const userObject = user.toObject({ virtuals: true })
+  const user = this;
+  const userObject = user.toObject({ virtuals: true });
 
   if (user.settings.hideWhenMade) {
-    delete userObject.createdAt
+    delete userObject.createdAt;
   }
-  delete userObject.updatedAt
-  delete userObject.password
-  delete userObject.__v
+  delete userObject.updatedAt;
+  delete userObject.password;
+  delete userObject.__v;
   if (limitLevevl >= 1) {
-    delete userObject.tokens
-    delete userObject._id
-    delete userObject.settings
-    delete userObject.email
+    delete userObject.tokens;
+    delete userObject._id;
+    delete userObject.settings;
+    delete userObject.email;
   }
   if (limitLevevl >= 2) {
-    delete userObject.createdAt
+    delete userObject.createdAt;
   }
-  return userObject
-}
+  return userObject;
+};
 
 UserSchema.statics.verifyCredentials = async function (email, password) {
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ email });
   if (!user) {
-    throw new ErrorArray(['email', 'Invaid email'], 'VerificationError')
+    throw new ErrorArray(['email', 'Invaid email'], 'VerificationError');
   }
 
-  const match = await bcrypt.compare(password, user.password)
+  const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    throw new ErrorArray(['password', 'Incorrect password'], 'VerificationError')
+    throw new ErrorArray(
+      ['password', 'Incorrect password'],
+      'VerificationError'
+    );
   }
-  return user
-}
+  return user;
+};
 
-UserSchema.statics.verifyPassword = async function (user, password, newPassword = null) {
+UserSchema.statics.verifyPassword = async function (
+  user,
+  password,
+  newPassword = null
+) {
   if (newPassword) {
     for (let i = 0; i < user.formerPasswords.length; i++) {
-      const key = user.formerPasswords[i]
+      const key = user.formerPasswords[i];
       if (await bcrypt.compare(newPassword, key)) {
-        throw new ErrorArray(['password', 'Password was formally used, use another'], 'VerificationError')
+        throw new ErrorArray(
+          ['password', 'Password was formally used, use another'],
+          'VerificationError'
+        );
       }
     }
   }
 
-  const match = await bcrypt.compare(password, user.password)
-  if (!match) throw new ErrorArray(['password', 'Incorrect password'], 'VerificationError')
-  return
-}
+  const match = await bcrypt.compare(password, user.password);
+  if (!match)
+    throw new ErrorArray(
+      ['password', 'Incorrect password'],
+      'VerificationError'
+    );
+  return;
+};
 
 UserSchema.pre('remove', async function (next) {
-  const user = this
-  await user.populate('posts')
-  for (let postID of user.posts) {
-    let post = await PostModel.findById(postID)
-    await post.remove()
+  const user = this;
+  await user.populate('posts');
+  for (const postID of user.posts) {
+    const post = await PostModel.findById(postID);
+    await post.remove();
   }
-  next()
-})
+  next();
+});
 
 UserSchema.pre('save', async function (next) {
-  const user = this
+  const user = this;
   if (user.isModified('password')) {
-    const hashedPassword = await bcrypt.hash(user.password, 8)
-    user.formerPasswords.push(hashedPassword)
-    user.password = hashedPassword
+    const hashedPassword = await bcrypt.hash(user.password, 8);
+    user.formerPasswords.push(hashedPassword);
+    user.password = hashedPassword;
   }
-  next()
-})
+  next();
+});
 
-//Add any plug-ins there are
-UserSchema.plugin(uniqueValidator, { message: "dupe" });
+// Add any plug-ins there are
+UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
-//Export model
-const User = mongoose.model('User', UserSchema)
-module.exports = User
+// Export model
+const User = mongoose.model('User', UserSchema);
+module.exports = User;

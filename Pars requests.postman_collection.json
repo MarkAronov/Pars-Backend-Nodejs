@@ -6,319 +6,580 @@
 	},
 	"item": [
 		{
-			"name": "Create post",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_title\": \"testing  2\",\r\n    \"_content\": \"some TESTS 2\",\r\n    \"_user_id\": \"61534787f7d38db844ba67c3\",\r\n    \"_parents_ids\": [ \"6153bbe453d9f64503136903\", \"6153bbf153d9f6450313690a\", \"6153c41103ca99ad684af521\" ]\r\n}\r\n",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{url}}/posts",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"posts"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Read post",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/posts/614e6e00eb471fc0129e6c52",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"posts",
-						"614e6e00eb471fc0129e6c52"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update post",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_title\": \"testing  4 updated\",\r\n    \"_content\": \"some TESTS 4 updated\",\r\n    \"_parents_ids\": [ \"6153bbf153d9f6450313690a\", \"6153c41103ca99ad684af521\" ]\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{url}}/posts/6153bbe453d9f64503136903",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"posts",
-						"6153bbe453d9f64503136903"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Delete post",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/posts/6153bbe453d9f64503136903",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"posts",
-						"6153bbe453d9f64503136903"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "List posts",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/posts",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"posts"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Create account",
-			"event": [
+			"name": "User Update",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"if(pm.response.code === 201){\r",
-							"    pm.environment.set('token', pm.response.json().token)\r",
-							"}"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_name\": \"huhuhuhffddu\",\r\n    \"_email\": \"dessdeedsseddffdede@uuuuuu.com\",\r\n    \"_password\": \"auuuuuuuuuuuuuuuuuuuu\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+					"name": "Account Update Password",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"currentPassword\": \"bbDFFDF2s77\",\r\n    \"newPassword\": \"bbDFFDF2s55\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/me/password",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"password"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "{{url}}/users",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Read account",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/users/huhuhuhffddu",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"huhuhuhffddu"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update account",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_name\": \"HEEEEEEHEEE\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{url}}/users/614ccfa75c202fa1aef3d8c3",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"614ccfa75c202fa1aef3d8c3"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Delete account",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/users/614e58a51d2dc0f37d794420",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"614e58a51d2dc0f37d794420"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "List accounts",
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": " ",
-						"type": "text",
-						"disabled": true
-					}
-				],
-				"url": {
-					"raw": "{{url}}/users/me",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"me"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Login account",
-			"event": [
 				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"if(pm.response.code === 200){\r",
-							"    pm.environment.set('token', pm.response.json().token)\r",
-							"}"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"_email\": \"dessdeedsseddffdede@uuuuuu.com\",\r\n    \"_password\": \"auuuuuuuuuuuuuuuuuuuu\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+					"name": "Account Update Important",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"asdid\",\r\n    \"password\": \"bbDFFDF2s55\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/me/important",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"important"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "{{url}}/users/login",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"login"
-					]
+				{
+					"name": "Account Update Regular",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"new_testman\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/me/regular",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"regular"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "Logout account",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/users/logout",
-					"host": [
-						"{{url}}"
+			"name": "User login/logout",
+			"item": [
+				{
+					"name": "Account Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code === 200){\r",
+									"    pm.environment.set('token', pm.response.json().token)\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
 					],
-					"path": [
-						"users",
-						"logout"
-					]
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"bb@dd.com\"\r\n\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/login",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
+						"url": {
+							"raw": "{{url}}/users/logout",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account LogoutAll",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/logoutall",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"logoutall"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "LogoutAll account",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"url": {
-					"raw": "{{url}}/users/logoutall",
-					"host": [
-						"{{url}}"
-					],
-					"path": [
-						"users",
-						"logoutall"
-					]
+			"name": "User Media",
+			"item": [
+				{
+					"name": "Account Avatar Get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/testman-2/avatar",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"testman-2",
+								"avatar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Avatar Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/me/avatar",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"avatar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Avatar Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": "/D:/Media/G-FuckFaces/696902119864c43a8fece33fe6ba5f2f.jpg"
+								}
+							],
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/me/avatar",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"avatar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account BackgroundImage Get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/testman-2/backgroundImage",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"testman-2",
+								"backgroundImage"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account BackgroundImage Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/me/backgroundImage",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"backgroundImage"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account BackgroundImage Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "backgroundImage",
+									"type": "file",
+									"src": "/D:/Media/R-ART/0def8307f213c5eef57296ee5aaf1865.png"
+								}
+							],
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/me/backgroundImage",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"backgroundImage"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Account Create",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code === 201){\r",
+									"    pm.environment.set('token', pm.response.json().token)\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"asda\",\r\n    \"email\": \"bb@dd.Com\",\r\n    \"password\": \"bbDFFDF232\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/users/me",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account List All",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": " ",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [],
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Account Find One User",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": " ",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [],
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/testman-2",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"testman-2"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Post Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"testing-2\",\r\n    \"content\": \"some TESTS\",\r\n    \"main_post\": \"619188102eecbd4e8f785da2\",\r\n    \"parents_ids\": [ ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/posts",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"posts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post Read",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/posts/614e6e00eb471fc0129e6c52",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"posts",
+								"614e6e00eb471fc0129e6c52"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post Update",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"testing  4 updated\",\r\n    \"content\": \"some TESTS 4 updated\",\r\n    \"parents_ids\": [ \"6153bbf153d9f6450313690a\", \"6153c41103ca99ad684af521\" ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/posts/6153bbe453d9f64503136903",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"posts",
+								"6153bbe453d9f64503136903"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/posts/619188102eecbd4e8f785da2",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"posts",
+								"619188102eecbd4e8f785da2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post List All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/posts",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"posts"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"auth": {

@@ -1,13 +1,12 @@
-const mongoose = require('mongoose')
-
+const mongoose = require('mongoose');
 
 const schemaOptions = {
   toJSON: {
-    virtuals: true
+    virtuals: true,
   },
   timestamps: true,
   id: false,
-}
+};
 
 const PostSchema = new mongoose.Schema(
   {
@@ -39,21 +38,27 @@ const PostSchema = new mongoose.Schema(
     //   }]
     // },
     replyingParents: {
-      type: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post'
-      }]
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Post',
+        },
+      ],
     },
     replyingChildren: {
-      type: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post'
-      }]
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Post',
+        },
+      ],
     },
     media: {
-      type: [{
-        type: Buffer,
-      }]
+      type: [
+        {
+          type: Buffer,
+        },
+      ],
     },
     edited: {
       type: Boolean,
@@ -62,46 +67,51 @@ const PostSchema = new mongoose.Schema(
     },
   },
   schemaOptions
-)
+);
 
 PostSchema.virtual('mainPostChildren', {
   ref: 'Post',
   localField: '_id',
-  foreignField: 'mainPost'
-})
+  foreignField: 'mainPost',
+});
 
 PostSchema.pre('remove', async function (next) {
-  const post = this
+  const post = this;
   if (post.mainPost === null) {
-    await post.populate('mainPostChildren')
-    for (let childId of post.mainPostChildren) {
-      const childPost = await Post.findById(childId)
+    await post.populate('mainPostChildren');
+    for (const childId of post.mainPostChildren) {
+      const childPost = await Post.findById(childId);
       if (childPost) {
-        childPost.remove()
+        childPost.remove();
       }
     }
-  }
-  else {
+  } else {
     // post.mainPost.mainPostChildren.splice(post.mainPost.mainPostChildren.indexOf(post._id), 1)
     // await post.mainPost.save()
-    for (let parentId of post.replyingParents) {
-      const formerParent = await Post.findById(parentId)
+    for (const parentId of post.replyingParents) {
+      const formerParent = await Post.findById(parentId);
       if (formerParent) {
-        formerParent.replyingChildren.splice(formerParent.replyingChildren.indexOf(post._id), 1)
-        await formerParent.save()
+        formerParent.replyingChildren.splice(
+          formerParent.replyingChildren.indexOf(post._id),
+          1
+        );
+        await formerParent.save();
       }
     }
-    for (let childId of post.replyingChildren) {
-      const formerChild = await Post.findById(childId)
+    for (const childId of post.replyingChildren) {
+      const formerChild = await Post.findById(childId);
       if (formerChild) {
-        formerChild.replyingParents.splice(formerChild.replyingParents.indexOf(post._id), 1)
-        await formerChild.save()
+        formerChild.replyingParents.splice(
+          formerChild.replyingParents.indexOf(post._id),
+          1
+        );
+        await formerChild.save();
       }
     }
   }
-  next()
-})
+  next();
+});
 
-//Export model
-const Post = mongoose.model('Post', PostSchema)
-module.exports = Post
+// Export model
+const Post = mongoose.model('Post', PostSchema);
+module.exports = Post;
