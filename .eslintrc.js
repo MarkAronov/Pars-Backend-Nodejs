@@ -9,6 +9,8 @@ module.exports = {
     ecmaVersion: 'latest',
   },
   rules: {
-    'new-cap': 0,
+    'new-cap': 'off',
+    'prettier/prettier': 'error',
+    'func-names': 'off',
   },
 };

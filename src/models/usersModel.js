@@ -57,7 +57,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       maxLength: 254,
-      validate(value) {
+      async validate(value) {
         let passwordErrorsList = [];
         passwordErrorsList = checkers.passwordChecker(value);
         if (passwordErrorsList.length !== 0)
@@ -147,6 +147,37 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   return userObject;
 };
 
+UserSchema.statics.verifyParameters = async function (req) {
+  const errors = {};
+  const reqKeys = Object.keys(req.body);
+  console.log(reqKeys);
+
+  for (let i = 0; i < reqKeys.length; i++) {
+    const key = reqKeys[i];
+    const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
+    if (key === 'newPassword') {
+      for (let j = 0; j < req.user.formerPasswords.length; j++) {
+        const keyPass = req.user.formerPasswords[j];
+        if (await bcrypt.compare(req.body[key], keyPass)) {
+          errors.password = [
+            'verification',
+            'Password was formally used, use another',
+          ];
+        }
+      }
+    }
+    if (req.user[key] === req.body[key]) {
+      errors[key] = [
+        'verification',
+        `${errorKey} is being currently used, try another`,
+      ];
+    }
+  }
+  if (Object.keys(errors).length) {
+    throw new ErrorArray(errors, 'VerificationError');
+  }
+};
+
 UserSchema.statics.verifyCredentials = async function (email, password) {
   const user = await User.findOne({ email });
   if (!user) {
@@ -163,29 +194,14 @@ UserSchema.statics.verifyCredentials = async function (email, password) {
   return user;
 };
 
-UserSchema.statics.verifyPassword = async function (
-  user,
-  password,
-  newPassword = null
-) {
-  if (newPassword) {
-    for (let i = 0; i < user.formerPasswords.length; i++) {
-      const key = user.formerPasswords[i];
-      if (await bcrypt.compare(newPassword, key)) {
-        throw new ErrorArray(
-          ['password', 'Password was formally used, use another'],
-          'VerificationError'
-        );
-      }
-    }
-  }
-
+UserSchema.statics.verifyPassword = async function (user, password) {
   const match = await bcrypt.compare(password, user.password);
-  if (!match)
+  if (!match) {
     throw new ErrorArray(
       ['password', 'Incorrect password'],
       'VerificationError'
     );
+  }
   return;
 };
 

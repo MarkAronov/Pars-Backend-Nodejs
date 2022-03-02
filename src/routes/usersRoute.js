@@ -136,9 +136,7 @@ router.post('/users/login', async function (req, res) {
       return res.status(400).send(err.arrayMessage);
     }
     if (err.name === 'ParameterError') {
-      return res
-        .status(400)
-        .send(['params', 'Invalid request, got invalid parameters']);
+      return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send(err.toString());
   }
@@ -183,13 +181,12 @@ router.post('/users', async function (req, res) {
 
     return res.status(201).send({ user, token });
   } catch (err) {
+    console.log(err);
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
     if (err.name === 'ParameterError') {
-      return res
-        .status(400)
-        .send(['params', 'Invalid request, got invalid parameters']);
+      return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send();
   }
@@ -209,12 +206,9 @@ router.delete('/users/me', auth, async function (req, res) {
 router.patch('/users/me/password', auth, async function (req, res) {
   try {
     parameterChecker(req, ['currentPassword', 'newPassword']);
+    await UserModel.verifyPassword(req.user, req.body.currentPassword);
+    await UserModel.verifyParameters(req);
 
-    await UserModel.verifyPassword(
-      req.user,
-      req.body.currentPassword,
-      req.body.newPassword
-    );
     req.user.password = req.body.newPassword;
     await req.user.save();
     return res.status(200).send();
@@ -222,12 +216,7 @@ router.patch('/users/me/password', auth, async function (req, res) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
-    if (err.name === 'ParameterError') {
-      return res
-        .status(400)
-        .send(['params', 'Invalid request, got invalid parameters']);
-    }
-    if (err.name === 'VerificationError') {
+    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send(err.toString());
@@ -238,6 +227,8 @@ router.patch('/users/me/important', auth, async function (req, res) {
   try {
     parameterChecker(req, ['password'], ['email', 'username']);
     await UserModel.verifyPassword(req.user, req.body.password);
+    await UserModel.verifyParameters(req);
+
     const reqKeys = Object.keys(req.body);
     reqKeys.forEach((key) => {
       if (key !== 'password') req.user[key] = req.body[key];
@@ -249,12 +240,7 @@ router.patch('/users/me/important', auth, async function (req, res) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
-    if (err.name === 'ParameterError') {
-      return res
-        .status(400)
-        .send(['params', 'Invalid request, got invalid parameters']);
-    }
-    if (err.name === 'VerificationError') {
+    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send(err.toString());
@@ -263,8 +249,14 @@ router.patch('/users/me/important', auth, async function (req, res) {
 
 router.patch('/users/me/regular', auth, async function (req, res) {
   try {
-    parameterChecker(req, ['displayName', 'bio', 'hideWhenMade', 'hidePosts']);
+    parameterChecker(
+      req,
+      [],
+      ['displayName', 'bio', 'hideWhenMade', 'hidePosts']
+    );
+    await UserModel.verifyParameters(req);
 
+    const reqKeys = Object.keys(req.body);
     reqKeys.forEach((key) => (req.user[key] = req.body[key]));
     await req.user.save();
     return res.status(200).send(req.user);
@@ -272,12 +264,7 @@ router.patch('/users/me/regular', auth, async function (req, res) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
-    if (err.name === 'ParameterError') {
-      return res
-        .status(400)
-        .send(['params', 'Invalid request, got invalid parameters']);
-    }
-    if (err.name === 'VerificationError') {
+    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send(err.toString());

@@ -3,7 +3,7 @@
 module.exports = class ErrorArray extends Error {
   /**
    * the constructor
-   * @param {array} array the error array list
+   * @param {any} array the error array list
    * @param {string} name the error name
    * @param {array} params the other parameters
    */
