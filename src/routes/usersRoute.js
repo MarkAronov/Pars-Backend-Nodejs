@@ -1,39 +1,47 @@
-const express = require('express');
+import express from 'express';
+import path from 'path';
+import fs from 'fs/promises';
+import UserModel from '../models/usersModel.js';
+import auth from '../middleware/auth.js';
+import { userMulter } from '../middleware/multer.js';
+import { fileTypeFromFile } from 'file-type';
+import errorComposer from '../funcs/errorComposer.js';
+import parameterChecker from '../funcs/parameterChecker.js';
+
 const router = express.Router();
-const path = require('path');
-const fs = require('fs/promises');
-const UserModel = require('../models/usersModel');
-const auth = require('../middleware/auth');
-const multer = require('../middleware/multer');
-const { errorComposer } = require('../funcs/errorComposer');
-const { parameterChecker } = require('../funcs/parameterChecker');
 
 router.post(
   '/users/me/:mediatype',
   auth,
-  multer.userMulter,
+  userMulter,
   async (req, res) => {
     const mediaType = req.params.mediatype;
-    if (mediaType !== 'avatar' && mediaType !== 'backgroundImage')
-      return res.status(400).send();
+    if (mediaType !== 'avatar' && mediaType !== 'backgroundImage') {
+      return res
+        .status(400)
+        .send('Either upload an avatar or a background image');
+    }
     if (req.files !== undefined) {
       const filename = req.files[mediaType][0].filename;
-      if (req.user[mediaType]) {
-        await fs.unlink(
-          path.join(
-            __dirname,
-            `../../media/${mediaType}s/${req.user[mediaType]}`
-          )
-        );
-      }
-      req.user[mediaType] = filename;
-      await req.user.save();
-      // let filePath = path.join(__dirname, `../../media/${mediaType}s/${filename}`);
+      console.log(req.files[mediaType][0]);
+
+      const meta = await fileTypeFromFile(req.files[mediaType][0].path);
+      console.log(meta);
+      // if (req.user[mediaType]) {
+      //   await fs.unlink(
+      //     path.join(
+      //       __dirname,
+      //       `../../media/${mediaType}s/${req.user[mediaType]}`
+      //     )
+      //   );
+      // }
+      // req.user[mediaType] = filename;
+      // await req.user.save();
       return res.status(200).send(filename);
     } else return res.status(400).send();
   },
   (error, req, res, next) => {
-    return res.status(500).send({ error: error.message });
+    return res.status(400).send(error.message);
   }
 );
 
@@ -135,7 +143,7 @@ router.post('/users/login', async function (req, res) {
     if (err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
-    if (err.name === 'ParameterError') {
+    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send(err.toString());
@@ -181,11 +189,10 @@ router.post('/users', async function (req, res) {
 
     return res.status(201).send({ user, token });
   } catch (err) {
-    console.log(err);
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
-    if (err.name === 'ParameterError') {
+    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
     return res.status(500).send();
@@ -236,7 +243,6 @@ router.patch('/users/me/important', auth, async function (req, res) {
     await req.user.save();
     return res.status(200).send(req.user);
   } catch (err) {
-    console.log(err);
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
     }
@@ -270,4 +276,5 @@ router.patch('/users/me/regular', auth, async function (req, res) {
     return res.status(500).send(err.toString());
   }
 });
-module.exports = router;
+
+export default router;

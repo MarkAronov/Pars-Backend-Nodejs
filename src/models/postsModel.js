@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const schemaOptions = {
   toJSON: {
@@ -114,4 +114,4 @@ PostSchema.pre('remove', async function (next) {
 
 // Export model
 const Post = mongoose.model('Post', PostSchema);
-module.exports = Post;
+export default Post;

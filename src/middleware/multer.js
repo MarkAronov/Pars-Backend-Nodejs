@@ -1,5 +1,5 @@
-const multer = require('multer');
-const crypto = require('crypto');
+import multer from 'multer';
+import crypto from 'crypto';
 
 // / MULTER SETTINGS ///
 const megabyte = 1000000;
@@ -37,16 +37,16 @@ const userMediaUpload = multer({
       );
     },
   }),
-  fileFilter(req, file, callback) {
-    if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
-      return callback(
-        new Error('The only formats allowed are PNG, JPG and GIF')
-      );
-    }
-    callback(undefined, true);
-  },
+  // ,
+  // fileFilter(req, file, callback) {
+  //   console.log(file);
+  //   if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
+  //     return callback(
+  //       new Error('The only formats allowed are PNG, JPG and GIF')
+  //     );
+  //   }
+  //   callback(undefined, true);
+  // },
 });
 
-module.exports = {
-  userMulter: userMediaUpload.fields(userMediaTypes),
-};
+export const userMulter = userMediaUpload.fields(userMediaTypes);

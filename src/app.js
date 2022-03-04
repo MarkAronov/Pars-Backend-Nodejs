@@ -1,13 +1,16 @@
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-const logger = require('morgan');
-require('./database/mongoose');
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express';
+import path from 'path';
+import cors from 'cors';
+import logger from 'morgan';
+import './database/mongoose.js';
 
-const usersRouter = require('./routes/usersRoute');
-const postsRouter = require('./routes/postsRoute');
-const miscRouter = require('./routes/miscRoutes');
+import usersRouter from './routes/usersRoute.js';
+import postsRouter from './routes/postsRoute.js';
+import miscRouter from './routes/miscRoutes.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use(cors());
@@ -20,4 +23,4 @@ app.use(usersRouter);
 app.use(postsRouter);
 app.use(miscRouter);
 
-module.exports = app;
+export default app;

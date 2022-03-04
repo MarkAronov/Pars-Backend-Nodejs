@@ -1,8 +1,8 @@
-const request = require('supertest');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const app = require('../src/app');
-const User = require('../src/models/usersModel');
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import app from '../src/app';
+import User from '../src/models/usersModel';
 
 const userID = new mongoose.Types.ObjectId();
 const testUser = {

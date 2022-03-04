@@ -1,9 +1,9 @@
-const express = require('express');
+import express from 'express';
+import mongoose from 'mongoose';
+import auth from '../middleware/auth.js';
+import PostModel from '../models/postsModel.js';
+import { filterDupes } from '../funcs/checkers.js';
 const router = express.Router();
-const mongoose = require('mongoose');
-const auth = require('../middleware/auth');
-const PostModel = require('../models/postsModel');
-const checkers = require('../funcs/checkers');
 
 // / POST ROUTES ///
 
@@ -21,7 +21,7 @@ router.get('/posts', async function (req, res) {
 // POST request for creating Post.
 router.post('/posts', auth, async function (req, res) {
   const post = new PostModel({ ...req.body, user: req.user._id });
-  const replyingParents = checkers.filterDupes(req.body.parents_ids.slice());
+  const replyingParents = filterDupes(req.body.parents_ids.slice());
   try {
     if (replyingParents.length >= 0) {
       if (req.body.main_post !== null) {
@@ -146,4 +146,4 @@ router.get('/posts/:id', async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

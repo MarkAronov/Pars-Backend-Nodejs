@@ -1,4 +1,4 @@
-exports.errorComposer = (err) => {
+const errorComposer = (err) => {
   const errors = {};
   Object.keys(err.errors).forEach((key) => {
     const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
@@ -30,3 +30,5 @@ exports.errorComposer = (err) => {
   });
   return errors;
 };
+
+export default errorComposer;

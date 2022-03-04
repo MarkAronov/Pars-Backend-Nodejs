@@ -1,9 +1,9 @@
-const ErrorArray = require('./ErrorArray');
+import ErrorArray from './ErrorArray.js';
 
-exports.parameterChecker = (req, params = [], optionalParams = []) => {
+const parameterChecker = (req, params = [], optionalParams = []) => {
   const reqKeys = Object.keys(req.body);
   const errors = {};
-  console.log(reqKeys);
+
   if (reqKeys.length === 0) throw new Error('Missing parameters');
   if (
     !reqKeys.every((key) => {
@@ -16,7 +16,10 @@ exports.parameterChecker = (req, params = [], optionalParams = []) => {
     );
   }
 
-  if (optionalParams.every((key) => !reqKeys.includes(key))) {
+  if (
+    optionalParams.length !== 0 &&
+    optionalParams.every((key) => !reqKeys.includes(key))
+  ) {
     errors.MAIN = [
       'parameter',
       `Missing one of the following parameters: ${optionalParams.join(', ')}`,
@@ -33,3 +36,5 @@ exports.parameterChecker = (req, params = [], optionalParams = []) => {
     throw new ErrorArray(errors, 'ParameterError');
   }
 };
+
+export default parameterChecker;

@@ -1,7 +1,7 @@
-const validator = require('validator');
+import validator from 'validator';
 
 // FUNCTIONS
-exports.filterDupes = (arr = []) => {
+export const filterDupes = (arr = []) => {
   const map = new Map();
   let filtered = [];
   for (const a of arr) {
@@ -13,7 +13,7 @@ exports.filterDupes = (arr = []) => {
   return filtered;
 };
 
-exports.usernameChecker = (str = '') => {
+export const usernameChecker = (str = '') => {
   const nameErrors = [];
   if (validator.contains(str, ' '))
     nameErrors.push(['validation', 'Username contains whitespace']);
@@ -25,14 +25,14 @@ exports.usernameChecker = (str = '') => {
   return nameErrors;
 };
 
-exports.emailChecker = (str = '') => {
+export const emailChecker = (str = '') => {
   const emailErrors = [];
   if (!validator.isEmail(str))
     emailErrors.push(['validation', 'Invalid email']);
   return emailErrors;
 };
 
-exports.passwordChecker = (str = '') => {
+export const passwordChecker = (str = '') => {
   const passwordErrors = [];
   const lowercase = str.match(/[a-z]/);
   const uppercase = str.match(/[A-Z]/);
@@ -60,7 +60,7 @@ exports.passwordChecker = (str = '') => {
   return passwordErrors;
 };
 
-exports.entropy = (str) => {
+export const entropy = (str) => {
   // Password entropy
   const E = str.length * Math.log2(filterDupes(str.split('')).length);
 

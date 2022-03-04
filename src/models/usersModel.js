@@ -1,12 +1,16 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const uniqueValidator = require('mongoose-unique-validator');
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import uniqueValidator from 'mongoose-unique-validator';
 
-const PostModel = require('./postsModel');
-const checkers = require('../funcs/checkers');
-const ErrorArray = require('../funcs/ErrorArray');
+import PostModel from './postsModel.js';
+import {
+  usernameChecker,
+  passwordChecker,
+  emailChecker,
+} from '../funcs/checkers.js';
+import ErrorArray from '../funcs/ErrorArray.js';
 
 const schemaOptions = {
   toJSON: {
@@ -29,7 +33,7 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       async validate(value) {
         let usernameErrors = [];
-        usernameErrors = checkers.usernameChecker(value);
+        usernameErrors = usernameChecker(value);
         if (usernameErrors.length !== 0)
           throw new ErrorArray(usernameErrors, '');
       },
@@ -49,7 +53,7 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       async validate(value) {
         let emailErrors = [];
-        emailErrors = checkers.emailChecker(value);
+        emailErrors = emailChecker(value);
         if (emailErrors.length !== 0) throw new ErrorArray(emailErrors, '');
       },
     },
@@ -59,7 +63,7 @@ const UserSchema = new mongoose.Schema(
       maxLength: 254,
       async validate(value) {
         let passwordErrorsList = [];
-        passwordErrorsList = checkers.passwordChecker(value);
+        passwordErrorsList = passwordChecker(value);
         if (passwordErrorsList.length !== 0)
           throw new ErrorArray(passwordErrorsList, '');
       },
@@ -150,7 +154,6 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
 UserSchema.statics.verifyParameters = async function (req) {
   const errors = {};
   const reqKeys = Object.keys(req.body);
-  console.log(reqKeys);
 
   for (let i = 0; i < reqKeys.length; i++) {
     const key = reqKeys[i];
@@ -230,4 +233,4 @@ UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
 // Export model
 const User = mongoose.model('User', UserSchema);
-module.exports = User;
+export default User;
