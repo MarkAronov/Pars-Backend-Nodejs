@@ -1,5 +1,6 @@
 import multer from 'multer';
 import crypto from 'crypto';
+// import { fileTypeFromFile } from 'file-type';
 
 // / MULTER SETTINGS ///
 const megabyte = 1000000;
@@ -15,31 +16,17 @@ const userMediaUpload = multer({
     files: 1,
   },
   storage: multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: async (req, file, cb) => {
       cb(null, `./media/${file.fieldname}s`);
     },
-    filename: function (req, file, cb) {
+    filename: async (req, file, cb) => {
       const uniqueSuffix = crypto.randomBytes(16).toString('hex');
-      const fileExtension = file.originalname.substr(
-        file.originalname.lastIndexOf('.') + 1
-      );
-      cb(
-        null,
-        file.fieldname +
-          '-' +
-          req.user._id +
-          '-' +
-          Date.now() +
-          '-' +
-          uniqueSuffix +
-          '.' +
-          fileExtension
-      );
+      cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
     },
   }),
-  // ,
   // fileFilter(req, file, callback) {
-  //   console.log(file);
+  //   // console.log(Object.keys(req));
+  //   // console.log(req.files);
   //   if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
   //     return callback(
   //       new Error('The only formats allowed are PNG, JPG and GIF')

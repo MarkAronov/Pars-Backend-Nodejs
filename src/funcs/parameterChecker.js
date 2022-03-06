@@ -4,7 +4,9 @@ const parameterChecker = (req, params = [], optionalParams = []) => {
   const reqKeys = Object.keys(req.body);
   const errors = {};
 
-  if (reqKeys.length === 0) throw new Error('Missing parameters');
+  if (reqKeys.length === 0) {
+    throw new ErrorArray(['parameter', 'Missing parameters'], 'ParameterError');
+  }
   if (
     !reqKeys.every((key) => {
       return params.includes(key) || optionalParams.includes(key);

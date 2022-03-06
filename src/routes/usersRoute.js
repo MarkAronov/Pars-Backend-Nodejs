@@ -1,12 +1,14 @@
 import express from 'express';
-import path from 'path';
 import fs from 'fs/promises';
+import path from 'path';
+import { fileTypeFromFile } from 'file-type';
+
 import UserModel from '../models/usersModel.js';
 import auth from '../middleware/auth.js';
 import { userMulter } from '../middleware/multer.js';
-import { fileTypeFromFile } from 'file-type';
 import errorComposer from '../funcs/errorComposer.js';
 import parameterChecker from '../funcs/parameterChecker.js';
+import dirName from '../funcs/dirName.js';
 
 const router = express.Router();
 
@@ -22,22 +24,28 @@ router.post(
         .send('Either upload an avatar or a background image');
     }
     if (req.files !== undefined) {
+      const whiteListedTypes = ['png', 'jpg', 'gif'];
+      const filePath = path.join(dirName(), `../../media/${mediaType}s`);
       const filename = req.files[mediaType][0].filename;
-      console.log(req.files[mediaType][0]);
-
       const meta = await fileTypeFromFile(req.files[mediaType][0].path);
-      console.log(meta);
-      // if (req.user[mediaType]) {
-      //   await fs.unlink(
-      //     path.join(
-      //       __dirname,
-      //       `../../media/${mediaType}s/${req.user[mediaType]}`
-      //     )
-      //   );
-      // }
-      // req.user[mediaType] = filename;
-      // await req.user.save();
-      return res.status(200).send(filename);
+
+      if (meta === undefined || !whiteListedTypes.includes(meta.ext)) {
+        await fs.unlink(`${filePath}/${filename}`);
+        return res
+          .status(400)
+          .send('The only formats allowed are PNG, JPG and GIF');
+      }
+      const fullName = `${filename}.${meta.ext}`;
+
+      try {
+        if (req.user[mediaType]) {
+          await fs.unlink(`${filePath}/${req.user[mediaType]}`);
+        }
+      } catch (err) {}
+      await fs.rename(`${filePath}/${filename}`, `${filePath}/${fullName}`);
+      req.user[mediaType] = fullName;
+      await req.user.save();
+      return res.status(200).send(fullName);
     } else return res.status(400).send();
   },
   (error, req, res, next) => {
@@ -55,7 +63,7 @@ router.get('/users/:username/:mediatype', async (req, res) => {
 
     if (user[mediaType]) {
       const filePath = path.join(
-        __dirname,
+        dirName(),
         `../../media/${mediaType}s/${user[mediaType]}`
       );
       return res.status(200).sendFile(filePath);
@@ -74,7 +82,7 @@ router.delete('/users/me/:mediatype', auth, async (req, res) => {
       return res.status(400).send();
     if (req.user.avatar && mediaType === 'avatar') {
       await fs.unlink(
-        path.join(__dirname, `../../media/${mediaType}s/${req.user.avatar}`)
+        path.join(dirName(), `../../media/${mediaType}s/${req.user.avatar}`)
       );
       req.user.avatar = null;
       await req.user.save();
@@ -82,7 +90,7 @@ router.delete('/users/me/:mediatype', auth, async (req, res) => {
     if (req.user.backgroundImage && mediaType === 'backgroundImage') {
       await fs.unlink(
         path.join(
-          __dirname,
+          dirName(),
           `../../media/${mediaType}s/${req.user.backgroundImage}`
         )
       );
@@ -140,6 +148,7 @@ router.post('/users/login', async function (req, res) {
     const user = userToLimit.toLimitedJSON(1);
     return res.status(200).send({ user, token });
   } catch (err) {
+    console.log(err.name);
     if (err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
@@ -241,7 +250,7 @@ router.patch('/users/me/important', auth, async function (req, res) {
       if (key !== 'password') req.user[key] = req.body[key];
     });
     await req.user.save();
-    return res.status(200).send(req.user);
+    return res.status(200).send(req.user.toLimitedJSON(1));
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));
@@ -265,7 +274,7 @@ router.patch('/users/me/regular', auth, async function (req, res) {
     const reqKeys = Object.keys(req.body);
     reqKeys.forEach((key) => (req.user[key] = req.body[key]));
     await req.user.save();
-    return res.status(200).send(req.user);
+    return res.status(200).send(req.user.toLimitedJSON(2));
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));

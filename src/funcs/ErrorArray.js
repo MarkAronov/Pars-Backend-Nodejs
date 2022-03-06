@@ -1,7 +1,7 @@
 /**
  * An error array class for better error handling
  */
-export default class ErrorArray extends Error {
+class ErrorArray extends Error {
   /**
    * the constructor
    * @param {any} array the error array list
@@ -14,3 +14,5 @@ export default class ErrorArray extends Error {
     this.arrayMessage = array;
   }
 }
+
+export default ErrorArray;
