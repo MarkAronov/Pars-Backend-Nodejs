@@ -125,11 +125,7 @@ router.get('/users/:username', async function (req, res) {
       await user.populate('posts');
     }
 
-    if (req.user !== undefined && user._id.equals(req.user._id)) {
-      return res.status(200).send(user.toLimitedJSON(1));
-    } else {
-      return res.status(200).send(user.toLimitedJSON(2));
-    }
+    return res.status(200).send(user.toLimitedJSON(2));
   } catch (err) {
     return res.status(500).send(err.toString());
   }
@@ -145,10 +141,9 @@ router.post('/users/login', async function (req, res) {
       req.body.password
     );
     const token = await userToLimit.generateToken();
-    const user = userToLimit.toLimitedJSON(1);
+    const user = userToLimit.toLimitedJSON(2);
     return res.status(200).send({ user, token });
   } catch (err) {
-    console.log(err.name);
     if (err.name === 'VerificationError') {
       return res.status(400).send(err.arrayMessage);
     }
@@ -250,7 +245,10 @@ router.patch('/users/me/important', auth, async function (req, res) {
       if (key !== 'password') req.user[key] = req.body[key];
     });
     await req.user.save();
-    return res.status(200).send(req.user.toLimitedJSON(1));
+    return res.status(200).send({
+      full: req.user.toLimitedJSON(0),
+      auth: req.user.toLimitedJSON(2),
+    });
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).send(errorComposer(err));

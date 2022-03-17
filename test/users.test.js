@@ -71,7 +71,7 @@ test('Should not sign up for a new user due to name', async () => {
     .expect(400);
 });
 
-test('Should sign in a user', async () => {
+test('Should log in a user', async () => {
   await request(app)
     .post('/users/login')
     .send({
@@ -81,7 +81,7 @@ test('Should sign in a user', async () => {
     .expect(200);
 });
 
-test('Should not sign in due to wrong password', async () => {
+test('Should not log in due to wrong password', async () => {
   await request(app)
     .post('/users/login')
     .send({
@@ -91,7 +91,7 @@ test('Should not sign in due to wrong password', async () => {
     .expect(400);
 });
 
-test('Should not sign in due to using a non existing email', async () => {
+test('Should not log in due to using a non existing email', async () => {
   await request(app)
     .post('/users/login')
     .send({

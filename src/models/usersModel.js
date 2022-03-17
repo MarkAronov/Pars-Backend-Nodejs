@@ -29,7 +29,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
-      maxLength: [64, 'Username is longer than 64 characters'],
+      maxLength: [64, 'Username is longer than 64 characters.'],
       trim: true,
       async validate(value) {
         let usernameErrors = [];
@@ -40,7 +40,7 @@ const UserSchema = new mongoose.Schema(
     },
     displayName: {
       type: String,
-      maxLength: [128, 'Display-Name is longer than 128 characters'],
+      maxLength: [128, 'Display Name is longer than 128 characters.'],
       default: '',
       trim: true,
     },
@@ -48,7 +48,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
-      maxLength: [254, 'Email is longer than 254 characters'],
+      maxLength: [254, 'Email is longer than 254 characters.'],
       lowercase: true,
       trim: true,
       async validate(value) {
@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema(
     },
     bio: {
       type: String,
-      maxLength: [400, 'Bio is longer than 400 characters'],
+      maxLength: [400, 'Bio is longer than 400 characters.'],
       default: '',
       trim: true,
     },
@@ -136,16 +136,17 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   if (user.settings.hideWhenMade) {
     delete userObject.createdAt;
   }
-  delete userObject.updatedAt;
   delete userObject.password;
+  delete userObject.formerPasswords;
   delete userObject.__v;
+  delete userObject._id;
   if (limitLevevl >= 1) {
     delete userObject.tokens;
-    delete userObject._id;
     delete userObject.settings;
     delete userObject.email;
   }
   if (limitLevevl >= 2) {
+    delete userObject.updatedAt;
     delete userObject.createdAt;
   }
   return userObject;
@@ -164,7 +165,7 @@ UserSchema.statics.verifyParameters = async function (req) {
         if (await bcrypt.compare(req.body[key], keyPass)) {
           errors.password = [
             'verification',
-            'Password was formally used, use another',
+            'Password was formally used, use another.',
           ];
         }
       }
@@ -172,7 +173,7 @@ UserSchema.statics.verifyParameters = async function (req) {
     if (req.user[key] === req.body[key]) {
       errors[key] = [
         'verification',
-        `${errorKey} is being currently used, try another`,
+        `${errorKey} is being currently used, try another.`,
       ];
     }
   }
@@ -184,13 +185,16 @@ UserSchema.statics.verifyParameters = async function (req) {
 UserSchema.statics.verifyCredentials = async function (email, password) {
   const user = await User.findOne({ email });
   if (!user) {
-    throw new ErrorArray(['email', 'Invaid email'], 'VerificationError');
+    throw new ErrorArray(
+      { email: [['Verification', 'Invalid email.']] },
+      'VerificationError'
+    );
   }
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     throw new ErrorArray(
-      ['password', 'Incorrect password'],
+      { password: [['Verification', 'Incorrect password.']] },
       'VerificationError'
     );
   }
@@ -201,7 +205,7 @@ UserSchema.statics.verifyPassword = async function (user, password) {
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     throw new ErrorArray(
-      ['password', 'Incorrect password'],
+      { password: [['Verification', 'Incorrect password.']] },
       'VerificationError'
     );
   }

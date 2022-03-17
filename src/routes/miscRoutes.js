@@ -11,7 +11,6 @@ router.get('/search/', async function (req, res) {
     const user = await UserModel.find();
     res.status(200).send(post, user);
   } catch (err) {
-    // console.log(err)
     res.status(500).send(err.toString());
   }
 });
