@@ -25,8 +25,6 @@ const userMediaUpload = multer({
     },
   }),
   // fileFilter(req, file, callback) {
-  //   // console.log(Object.keys(req));
-  //   // console.log(req.files);
   //   if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
   //     return callback(
   //       new Error('The only formats allowed are PNG, JPG and GIF')

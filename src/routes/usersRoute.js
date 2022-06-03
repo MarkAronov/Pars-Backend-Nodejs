@@ -7,7 +7,7 @@ import UserModel from '../models/usersModel.js';
 import auth from '../middleware/auth.js';
 import { userMulter } from '../middleware/multer.js';
 import errorComposer from '../funcs/errorComposer.js';
-import parameterChecker from '../funcs/parameterChecker.js';
+import { parameterChecker } from '../funcs/checkers.js';
 import dirName from '../funcs/dirName.js';
 
 const router = express.Router();
@@ -106,7 +106,7 @@ router.delete('/users/me/:mediatype', auth, async (req, res) => {
 // / USER ROUTES ///
 
 // GET request for list of all Users.
-router.get('/users/', async function (req, res) {
+router.get('/users/', async (req, res) => {
   try {
     const users = await UserModel.find({});
     return res.status(200).send(users);
@@ -116,7 +116,7 @@ router.get('/users/', async function (req, res) {
 });
 
 // GET request for one User.
-router.get('/users/:username', async function (req, res) {
+router.get('/users/:username', async (req, res) => {
   try {
     const user = await UserModel.findOne({ username: req.params.username });
     if (!user) return res.status(404).send();
@@ -132,7 +132,7 @@ router.get('/users/:username', async function (req, res) {
 });
 
 // POST request for logging the user in.
-router.post('/users/login', async function (req, res) {
+router.post('/users/login', async (req, res) => {
   try {
     parameterChecker(req, ['email', 'password']);
 
@@ -155,7 +155,7 @@ router.post('/users/login', async function (req, res) {
 });
 
 // POST request for logging the user out.
-router.post('/users/logout', auth, async function (req, res) {
+router.post('/users/logout', auth, async (req, res) => {
   try {
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token;
@@ -168,7 +168,7 @@ router.post('/users/logout', auth, async function (req, res) {
 });
 
 // POST request for logging the user out from all sessions.
-router.post('/users/logoutall', auth, async function (req, res) {
+router.post('/users/logoutall', auth, async (req, res) => {
   try {
     req.user.tokens = [];
     await req.user.save();
@@ -179,7 +179,7 @@ router.post('/users/logoutall', auth, async function (req, res) {
 });
 
 // POST request for creating User.
-router.post('/users', async function (req, res) {
+router.post('/users', async (req, res) => {
   try {
     parameterChecker(req, ['email', 'username', 'password']);
 
@@ -204,7 +204,7 @@ router.post('/users', async function (req, res) {
 });
 
 // DELETE request to delete User.
-router.delete('/users/me', auth, async function (req, res) {
+router.delete('/users/me', auth, async (req, res) => {
   try {
     await req.user.remove();
     return res.status(200).send();
@@ -214,7 +214,7 @@ router.delete('/users/me', auth, async function (req, res) {
 });
 
 // PATCH request to update User.
-router.patch('/users/me/password', auth, async function (req, res) {
+router.patch('/users/me/password', auth, async (req, res) => {
   try {
     parameterChecker(req, ['currentPassword', 'newPassword']);
     await UserModel.verifyPassword(req.user, req.body.currentPassword);
@@ -234,7 +234,7 @@ router.patch('/users/me/password', auth, async function (req, res) {
   }
 });
 
-router.patch('/users/me/important', auth, async function (req, res) {
+router.patch('/users/me/important', auth, async (req, res) => {
   try {
     parameterChecker(req, ['password'], ['email', 'username']);
     await UserModel.verifyPassword(req.user, req.body.password);
@@ -260,7 +260,7 @@ router.patch('/users/me/important', auth, async function (req, res) {
   }
 });
 
-router.patch('/users/me/regular', auth, async function (req, res) {
+router.patch('/users/me/regular', auth, async (req, res) => {
   try {
     parameterChecker(
       req,

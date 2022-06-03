@@ -4,6 +4,9 @@ const schemaOptions = {
   toJSON: {
     virtuals: true,
   },
+  toObject: {
+    vituals: true,
+  },
   timestamps: true,
   id: false,
 };
@@ -31,13 +34,8 @@ const PostSchema = new mongoose.Schema(
       ref: 'Post',
       default: null,
     },
-    // mainPostChildren: {
-    //   type: [{
-    //     type: Schema.Types.ObjectId,
-    //     ref: 'Post'
-    //   }]
-    // },
-    replyingParents: {
+
+    mentionedParents: {
       type: [
         {
           type: mongoose.Schema.Types.ObjectId,
@@ -45,14 +43,7 @@ const PostSchema = new mongoose.Schema(
         },
       ],
     },
-    replyingChildren: {
-      type: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'Post',
-        },
-      ],
-    },
+
     media: {
       type: [
         {
@@ -75,6 +66,22 @@ PostSchema.virtual('mainPostChildren', {
   foreignField: 'mainPost',
 });
 
+PostSchema.virtual('mentioningChildren', {
+  ref: 'Post',
+  localField: '_id',
+  foreignField: 'mentionedParents',
+});
+
+PostSchema.methods.toCustomJSON = async function () {
+  const post = this;
+  await post.populate('mainPostChildren');
+  await post.populate('mentioningChildren');
+  const postObject = await post.toObject({ virtuals: true });
+  console.log(postObject);
+  delete postObject.__v;
+  return postObject;
+};
+
 PostSchema.pre('remove', async function (next) {
   const post = this;
   if (post.mainPost === null) {
@@ -86,23 +93,21 @@ PostSchema.pre('remove', async function (next) {
       }
     }
   } else {
-    // post.mainPost.mainPostChildren.splice(post.mainPost.mainPostChildren.indexOf(post._id), 1)
-    // await post.mainPost.save()
-    for (const parentId of post.replyingParents) {
+    for (const parentId of post.mentionedParents) {
       const formerParent = await Post.findById(parentId);
       if (formerParent) {
-        formerParent.replyingChildren.splice(
-          formerParent.replyingChildren.indexOf(post._id),
+        formerParent.mentioningChildren.splice(
+          formerParent.mentioningChildren.indexOf(post._id),
           1
         );
         await formerParent.save();
       }
     }
-    for (const childId of post.replyingChildren) {
+    for (const childId of post.mentioningChildren) {
       const formerChild = await Post.findById(childId);
       if (formerChild) {
-        formerChild.replyingParents.splice(
-          formerChild.replyingParents.indexOf(post._id),
+        formerChild.mentionedParents.splice(
+          formerChild.mentionedParents.indexOf(post._id),
           1
         );
         await formerChild.save();

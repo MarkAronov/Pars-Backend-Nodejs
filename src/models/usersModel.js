@@ -152,7 +152,7 @@ UserSchema.methods.toLimitedJSON = function (limitLevevl) {
   return userObject;
 };
 
-UserSchema.statics.verifyParameters = async function (req) {
+UserSchema.statics.verifyParameters = async (req) => {
   const errors = {};
   const reqKeys = Object.keys(req.body);
 
@@ -182,7 +182,7 @@ UserSchema.statics.verifyParameters = async function (req) {
   }
 };
 
-UserSchema.statics.verifyCredentials = async function (email, password) {
+UserSchema.statics.verifyCredentials = async (email, password) => {
   const user = await User.findOne({ email });
   if (!user) {
     throw new ErrorArray(
@@ -201,7 +201,7 @@ UserSchema.statics.verifyCredentials = async function (email, password) {
   return user;
 };
 
-UserSchema.statics.verifyPassword = async function (user, password) {
+UserSchema.statics.verifyPassword = async (user, password) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     throw new ErrorArray(
@@ -224,6 +224,7 @@ UserSchema.pre('remove', async function (next) {
 
 UserSchema.pre('save', async function (next) {
   const user = this;
+  console.log(user);
   if (user.isModified('password')) {
     const hashedPassword = await bcrypt.hash(user.password, 8);
     user.formerPasswords.push(hashedPassword);
