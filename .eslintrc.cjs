@@ -3,11 +3,14 @@ module.exports = {
     browser: true,
     es2021: true,
   },
-  extends: ['google', 'plugin:prettier/recommended'],
+  extends: [
+    'prettier',
+    // 'eslint:recommended',
+    // 'plugin:@typescript-eslint/recommended',
+    'airbnb-typescript',
+    'node',
+  ],
   parserOptions: {
-    ecmaFeatures: {
-      jsx: true,
-    },
     ecmaVersion: 12,
     sourceType: 'module',
   },
@@ -16,5 +19,17 @@ module.exports = {
     'prettier/prettier': 'error',
     'func-names': 'off',
     'no-invalid-this': 'off',
+    'no-explicit-any': 'off',
   },
+  root: true,
+  overrides: [
+    {
+      files: ['test/*'],
+      env: {
+        jest: true,
+      },
+    },
+  ],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
 };

@@ -1,10 +1,11 @@
+import { Request } from 'express';
 import validator from 'validator';
-import ErrorArray from './ErrorArray.js';
+import ErrorAO from './ErrorAO.js';
 
 // FUNCTIONS
 export const filterDupes = (arr = []) => {
   const map = new Map();
-  let filtered = [];
+  let filtered: Array<string> = [];
   for (const a of arr) {
     if (map.get(a) === undefined) {
       map.set(a, true);
@@ -17,7 +18,7 @@ export const filterDupes = (arr = []) => {
 export const usernameChecker = (str = '') => {
   const nameErrors = [];
   if (validator.contains(str, ' '))
-    nameErrors.push(['validation', 'Username contains whitespace']);
+    nameErrors.push('Username contains whitespace');
   if (!str.match(/^[0-9a-zA-Z\s]+$/))
     nameErrors.push([
       'validation',
@@ -41,27 +42,20 @@ export const passwordChecker = (str = '') => {
 
   // Minimum: 10 chars | 1 Uppercase | 1 lowercase | 1 digit
   if (str.length < 10)
-    passwordErrors.push(['validation', 'Password is less than 10 characters']);
+    passwordErrors.push('Password is less than 10 characters');
   if (!lowercase)
-    passwordErrors.push([
-      'validation',
-      'Password must have at least one lowercase',
-    ]);
+    passwordErrors.push('Password must have at least one lowercase');
   if (!uppercase)
-    passwordErrors.push([
-      'validation',
-      'Password must have at least one uppercase',
-    ]);
-  if (!numbers)
-    passwordErrors.push([
-      'validation',
-      'Password must have at least one digit',
-    ]);
+    passwordErrors.push('Password must have at least one uppercase');
+  if (!numbers) passwordErrors.push('Password must have at least one digit');
 
   return passwordErrors;
 };
 
-export const entropy = (str) => {
+export const entropy = (str: {
+  length: number;
+  split: (arg0: string) => never[] | undefined;
+}) => {
   // Password entropy
   const E = str.length * Math.log2(filterDupes(str.split('')).length);
 
@@ -69,26 +63,33 @@ export const entropy = (str) => {
 };
 
 export const parameterChecker = (
-  req,
-  params = [],
-  optionalParams = [],
+  req: Request,
+  params: Array<string> = [],
+  optionalParams: Array<string> = [],
   options = {
     needOneOptional: true,
   }
 ) => {
   const reqKeys = Object.keys(req.body);
-  const errors = {};
+  const errorArray:
+    | {
+        [key: string]: string[][];
+      }
+    | string[][] = {};
 
   if (reqKeys.length === 0) {
-    throw new ErrorArray(['parameter', 'Missing parameters'], 'ParameterError');
+    throw new ErrorAO(
+      { MAIN: [['parameter', 'Missing parameters']] },
+      'ParameterError'
+    );
   }
   if (
-    !reqKeys.every((key) => {
+    !reqKeys.every((key: string) => {
       return params.includes(key) || optionalParams.includes(key);
     })
   ) {
-    throw new ErrorArray(
-      ['parameter', 'Invalid request, got invalid parameters'],
+    throw new ErrorAO(
+      { MAIN: [['parameter', 'Invalid request, got invalid parameters']] },
       'ParameterError'
     );
   }
@@ -98,19 +99,23 @@ export const parameterChecker = (
     optionalParams.every((key) => !reqKeys.includes(key)) &&
     options.needOneOptional
   ) {
-    errors.MAIN = [
-      'parameter',
-      `Missing one of the following parameters: ${optionalParams.join(', ')}`,
+    errorArray.MAIN = [
+      [
+        'parameter',
+        `Missing one of the following parameters: ${optionalParams.join(', ')}`,
+      ],
     ];
   }
   for (let i = 0; i < params.length; i++) {
-    const key = params[i];
+    const key: string = params[i];
     const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
     if (!reqKeys.includes(key)) {
-      errors[key] = ['verification', `${errorKey} is missing and it's needed`];
+      errorArray[key] = [
+        ['parameter', `${errorKey} is missing and it's needed`],
+      ];
     }
   }
-  if (Object.keys(errors).length) {
-    throw new ErrorArray(errors, 'ParameterError');
+  if (Object.keys(errorArray).length) {
+    throw new ErrorAO(errorArray, 'ParameterError');
   }
 };

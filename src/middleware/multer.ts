@@ -1,5 +1,5 @@
 import multer from 'multer';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 // import { fileTypeFromFile } from 'file-type';
 
 // / MULTER SETTINGS ///
@@ -16,10 +16,18 @@ const userMediaUpload = multer({
     files: 1,
   },
   storage: multer.diskStorage({
-    destination: async (req, file, cb) => {
+    destination: async (
+      req: any,
+      file: { fieldname: any },
+      cb: (arg0: null, arg1: string) => void
+    ) => {
       cb(null, `./media/${file.fieldname}s`);
     },
-    filename: async (req, file, cb) => {
+    filename: async (
+      req: any,
+      file: { fieldname: string },
+      cb: (arg0: null, arg1: string) => void
+    ) => {
       const uniqueSuffix = crypto.randomBytes(16).toString('hex');
       cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
     },

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const schemaOptions = {
+const schemaOptions: any = {
   toJSON: {
     virtuals: true,
   },
@@ -34,7 +34,6 @@ const PostSchema = new mongoose.Schema(
       ref: 'Post',
       default: null,
     },
-
     mentionedParents: {
       type: [
         {
@@ -43,7 +42,6 @@ const PostSchema = new mongoose.Schema(
         },
       ],
     },
-
     media: {
       type: [
         {
@@ -72,18 +70,17 @@ PostSchema.virtual('mentioningChildren', {
   foreignField: 'mentionedParents',
 });
 
-PostSchema.methods.toCustomJSON = async function () {
+PostSchema.method('toCustomJSON', async function toCustomJSON() {
   const post = this;
   await post.populate('mainPostChildren');
   await post.populate('mentioningChildren');
   const postObject = await post.toObject({ virtuals: true });
-  console.log(postObject);
   delete postObject.__v;
   return postObject;
-};
+});
 
-PostSchema.pre('remove', async function (next) {
-  const post = this;
+PostSchema.pre('remove', async function preRemove(next: () => void) {
+  const post: any = this;
   if (post.mainPost === null) {
     await post.populate('mainPostChildren');
     for (const childId of post.mainPostChildren) {
@@ -93,16 +90,7 @@ PostSchema.pre('remove', async function (next) {
       }
     }
   } else {
-    for (const parentId of post.mentionedParents) {
-      const formerParent = await Post.findById(parentId);
-      if (formerParent) {
-        formerParent.mentioningChildren.splice(
-          formerParent.mentioningChildren.indexOf(post._id),
-          1
-        );
-        await formerParent.save();
-      }
-    }
+    await post.populate('mentioningChildren');
     for (const childId of post.mentioningChildren) {
       const formerChild = await Post.findById(childId);
       if (formerChild) {
@@ -117,6 +105,29 @@ PostSchema.pre('remove', async function (next) {
   next();
 });
 
+export interface IPost extends mongoose.Document {
+  title: string;
+  content: string;
+  user: mongoose.Types.ObjectId;
+  mainPost: mongoose.Types.ObjectId;
+  mentionedParents: Array<mongoose.Types.ObjectId>;
+  media: Array<{
+    type?: Buffer;
+  }>;
+  edited: boolean;
+}
+
+interface IPostDocument extends IPost {
+  toCustomJSON(): typeof Post;
+  preRemove(next: () => void): void;
+}
+
+export interface IPostModel extends mongoose.Model<IPostDocument> {}
+
 // Export model
-const Post = mongoose.model('Post', PostSchema);
-export default Post;
+export const Post: IPostModel = mongoose.model<IPostDocument, IPostModel>(
+  'Post',
+  PostSchema
+);
+
+// Export model

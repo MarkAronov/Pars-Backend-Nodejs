@@ -1,12 +1,15 @@
-import jwt from 'jsonwebtoken';
-import UserModel from '../models/usersModel.js';
+import jsonwebtoken from 'jsonwebtoken';
+import { User } from '../models/usersModel.js';
 
-const auth = async (req, res, next) => {
+const auth = async (req: any, res: any, next: () => void) => {
   try {
     if (!req.header('Authorization')) throw new Error('401');
     const uncodedToken = req.header('Authorization').replace('Bearer ', '');
-    const decodedToken = jwt.verify(uncodedToken, process.env.JWT_STRING);
-    const user = await UserModel.findOne({
+    const decodedToken: any = jsonwebtoken.verify(
+      uncodedToken,
+      process.env.JWT_STRING!
+    );
+    const user = await User.findOne({
       _id: decodedToken.id,
       'tokens.token': uncodedToken,
     });
@@ -14,7 +17,7 @@ const auth = async (req, res, next) => {
     req.token = uncodedToken;
     req.user = user;
     next();
-  } catch (e) {
+  } catch (e: any) {
     if (e.message === '401')
       res.status(401).send({ error: 'Authenticate first' });
     else res.status(500).send(e);

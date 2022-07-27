@@ -1,38 +1,38 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import auth from '../middleware/auth.js';
-import PostModel from '../models/postsModel.js';
-import { filterDupes } from '../funcs/checkers.js';
-import { parameterChecker } from '../funcs/checkers.js';
+import { Post } from '../models/postsModel.js';
+import { filterDupes } from '../utils/checkers.js';
+import { parameterChecker } from '../utils/checkers.js';
 const router = express.Router();
 
 // / POST ROUTES ///
 
 // GET request for list of all Post items.
-router.get('/posts', async (req, res) => {
+router.get('/posts', async (req: Request, res: Response) => {
   try {
-    const posts = await PostModel.find({});
+    const posts = await Post.find({});
     return res.status(200).send(posts);
-  } catch (err) {
-    res.status(500).send(err.toString());
+  } catch (error: any) {
+    return res.status(500).send(error.toString());
   }
 });
 
 // GET request for one Post.
-router.get('/posts/:id', async (req, res) => {
+router.get('/posts/:id', async (req: Request, res: Response) => {
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send();
 
     const fullPost = await post.toCustomJSON();
-    res.status(200).send(fullPost);
-  } catch (err) {
-    res.status(500).send(err.toString());
+    return res.status(200).send(fullPost);
+  } catch (error: any) {
+    return res.status(500).send(error.toString());
   }
 });
 
 // POST request for creating Post.
-router.post('/posts', auth, async (req, res) => {
+router.post('/posts', auth, async (req: any, res: Response) => {
   try {
     parameterChecker(
       req,
@@ -43,61 +43,61 @@ router.post('/posts', auth, async (req, res) => {
       }
     );
 
-    const post = new PostModel({ ...req.body, user: req.user._id });
+    const post = new Post({ ...req.body, user: req.user._id });
     const mentionedParents = req.body.mentionedParents
       ? filterDupes(req.body.mentionedParents.slice())
       : [];
 
     if (req.body.mainPost) {
-      const mainPost = await PostModel.findById(req.body.mainPost);
+      const mainPost = await Post.findById(req.body.mainPost);
       if (!mainPost)
         return res
           .status(404)
           .send(`No main post by that ID: ${req.body.mainPost}`);
-      post.mainPost = mainPost;
+      post.mainPost = new mongoose.Types.ObjectId(mainPost._id);
     }
 
     for (const parentID of mentionedParents) {
-      const parent = await PostModel.findById(parentID);
+      const parent = await Post.findById(parentID);
       if (!parent)
         return res.status(404).send(`No parent by that ID: ${parentID}`);
       if (parent._id.equals(post._id))
         return res.status(400).send('You cannot reply to yourself');
     }
     for (const parentID of mentionedParents) {
-      const parent = await PostModel.findById(parentID);
+      const parent = await Post.findById(parentID);
       post.mentionedParents = post.mentionedParents.concat(parent._id);
     }
     await post.save();
     const fullPost = await post.toCustomJSON();
-    res.status(200).send(fullPost);
-  } catch (err) {
-    if (err.name === 'ParameterError' || err.name === 'VerificationError') {
-      return res.status(400).send(err.arrayMessage);
+    return res.status(200).send(fullPost);
+  } catch (error: any) {
+    if (error.name === 'ParameterError' || error.name === 'VerificationError') {
+      return res.status(400).send(error.errorArray);
     }
-    res.status(500).send(err.toString());
+    return res.status(500).send(error.toString());
   }
 });
 
 // DELETE request to delete Post.
-router.delete('/posts/:id', auth, async (req, res) => {
+router.delete('/posts/:id', auth, async (req: any, res: Response) => {
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send();
     if (!post.user._id.equals(req.user._id))
       return res.status(403).send('You are not allowed to delete this post');
     post.remove();
-    res.status(200).send();
-  } catch (err) {
-    res.status(500).send(err.toString());
+    return res.status(200).send();
+  } catch (error: any) {
+    return res.status(500).send(error.toString());
   }
 });
 
 // GET request to update Post.
-router.patch('/posts/:id', auth, async (req, res) => {
+router.patch('/posts/:id', auth, async (req: any, res: Response) => {
   parameterChecker(req, ['title', 'content'], ['mainPost', 'mentionedParents']);
   try {
-    const post = await PostModel.findById(req.params.id);
+    const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send('No post by that ID');
     if (!post.user._id.equals(req.user._id))
       return res.status(403).send('You are not allowed to change this post');
@@ -107,11 +107,11 @@ router.patch('/posts/:id', auth, async (req, res) => {
       .map((value) => value._id.toString());
     const updatedParents = req.body.mentionedParents.slice();
     for (const currentParentID of currentParents) {
-      const currentParent = await PostModel.findById(currentParentID);
+      const currentParent = await Post.findById(currentParentID);
       if (!currentParent) return res.status(404).send();
     }
     for (const updatedParentID of updatedParents) {
-      const updatedParent = await PostModel.findById(updatedParentID);
+      const updatedParent = await Post.findById(updatedParentID);
       console.log(updatedParent);
       if (!updatedParent) return res.status(404).send();
       if (updatedParent.equals(post._id))
@@ -122,7 +122,10 @@ router.patch('/posts/:id', auth, async (req, res) => {
     post.edited = true;
     for (const currParentId of post.mentionedParents) {
       if (updatedParents.indexOf(currParentId) === -1) {
-        currentParents.splice(currentParents.indexOf(currParentId), 1);
+        currentParents.splice(
+          currentParents.indexOf(currParentId.toString()),
+          1
+        );
       }
     }
     for (const newerParentId of updatedParents) {
@@ -130,14 +133,14 @@ router.patch('/posts/:id', auth, async (req, res) => {
         currentParents.push(newerParentId);
       }
     }
-    post.mentionedParents = currentParents.map((parent) =>
-      mongoose.Types.ObjectId(parent)
+    post.mentionedParents = currentParents.map(
+      (parent: string) => new mongoose.Types.ObjectId(parent)
     );
     await post.save();
     const fullPost = await post.toCustomJSON();
-    res.status(201).send(fullPost);
-  } catch (err) {
-    res.status(500).send(err.toString());
+    return res.status(201).send(fullPost);
+  } catch (error: any) {
+    return res.status(500).send(error.toString());
   }
 });
 

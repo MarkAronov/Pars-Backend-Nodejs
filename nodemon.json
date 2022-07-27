@@ -1,5 +1,6 @@
 {
-  "ignore": [".git", "node_modules", "dist"],
-  "watch": ["./src"], 
-  "ext": "js"
+  "ignore": [".git", "node_modules", "dist", "./src/**/*.spec.ts"],
+  "watch": ["src"],
+  "exec": "ts-node ./src/server.ts --ignore-watch node_modules --no-notify --respawn --transpileOnly && eslint .",
+  "ext": "js, json, ts, proto"
 }

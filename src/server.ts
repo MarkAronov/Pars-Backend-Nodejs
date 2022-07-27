@@ -4,18 +4,20 @@
  * Module dependencies.
  */
 
-import app from '../app.js';
+import app from './app.js';
 import debugImport from 'debug';
-import http from 'http';
+import * as http from 'http';
 
 const debug = debugImport('backend-nodejs:server');
 
+// type NormalizePortType = string | number | boolean;
+
 /**
  * Normalize a port into a number, string, or false.
- * @param {any} val
+ * @param {string} val
  * @return {any}
  */
-const normalizePort = (val) => {
+const normalizePort = (val: string) => {
   const port = parseInt(val, 10);
 
   if (isNaN(port)) {
@@ -45,9 +47,9 @@ const server = http.createServer(app);
 
 /**
  * Event listener for HTTP server "error" event.
- * @param {any} error
+ * @param {object} error
  */
-const onError = (error) => {
+const onError = (error: { syscall: string; code: any }) => {
   if (error.syscall !== 'listen') {
     throw error;
   }
@@ -74,7 +76,7 @@ const onError = (error) => {
  */
 const onListening = () => {
   const addr = server.address();
-  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr?.port;
   debug('Listening on ' + bind);
 };
 
