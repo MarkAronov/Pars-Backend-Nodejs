@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-// import uniqueValidator from 'mongoose-unique-validator';
+
+import uniqueValidator from 'mongoose-unique-validator';
 
 import { Post } from './postsModel.js';
 import {
@@ -156,7 +157,7 @@ UserSchema.static(
     user: { [x: string]: any; formerPasswords: string | any[] };
   }) {
     const errorArray: {
-      [key: string]: string[][];
+      [key: string]: string[];
     } = {};
     const reqKeys = Object.keys(req.body);
 
@@ -167,9 +168,7 @@ UserSchema.static(
         for (let j = 0; j < req.user.formerPasswords.length; j++) {
           const keyPass = req.user.formerPasswords[j];
           if (await bcrypt.compare(req.body[key], keyPass)) {
-            errorArray.password = [
-              ['validation', 'Password was formally used, use another.'],
-            ];
+            errorArray.password = ['Password was formally used, use another.'];
           }
         }
       }
@@ -228,6 +227,7 @@ UserSchema.pre('remove', async function preRemove(next) {
 
 UserSchema.pre('save', async function preSave(next) {
   const user: any = this;
+
   if (user.isModified('password')) {
     const hashedPassword = await bcrypt.hash(user.password, 8);
     user.formerPasswords.push(hashedPassword);
@@ -235,17 +235,6 @@ UserSchema.pre('save', async function preSave(next) {
   }
   next();
 });
-
-UserSchema.post('save', function (error, doc, next) {
-  if (error.name === 'MongoServerError' && error.code === 11000) {
-    next(new ErrorAO(['There was a duplicate key error'], ''));
-  } else {
-    next();
-  }
-});
-
-// Add any plug-ins there are
-// UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
 export interface IUser extends mongoose.Document {
   username: string;
@@ -265,13 +254,15 @@ export interface IUser extends mongoose.Document {
   formerPasswords: Array<string>;
 }
 
+UserSchema.plugin(uniqueValidator, { message: 'dupe' });
+
 interface IUserDocument extends IUser {
   generateToken(): string;
   toLimitedJSON(limitLevevl: number): typeof User;
 }
 
 export interface IUserModel extends mongoose.Model<IUserDocument> {
-  verifyPassword(user: any, currentPassword: any);
+  verifyPassword(user: IUserModel, currentPassword: string);
   verifyParameters(req: {
     body: { [x: string]: any };
     user: { [x: string]: any; formerPasswords: string | any[] };

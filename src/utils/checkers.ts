@@ -17,20 +17,18 @@ export const filterDupes = (arr = []) => {
 
 export const usernameChecker = (str = '') => {
   const nameErrors = [];
+
   if (validator.contains(str, ' '))
     nameErrors.push('Username contains whitespace');
   if (!str.match(/^[0-9a-zA-Z\s]+$/))
-    nameErrors.push([
-      'validation',
-      'Username contains none alphanumeric characters',
-    ]);
+    nameErrors.push('Username contains none alphanumeric characters');
   return nameErrors;
 };
 
 export const emailChecker = (str = '') => {
   const emailErrors = [];
-  if (!validator.isEmail(str))
-    emailErrors.push(['validation', 'Invalid email']);
+
+  if (!validator.isEmail(str)) emailErrors.push('Invalid email');
   return emailErrors;
 };
 
@@ -73,15 +71,12 @@ export const parameterChecker = (
   const reqKeys = Object.keys(req.body);
   const errorArray:
     | {
-        [key: string]: string[][];
+        [key: string]: string[];
       }
     | string[][] = {};
 
   if (reqKeys.length === 0) {
-    throw new ErrorAO(
-      { MAIN: [['parameter', 'Missing parameters']] },
-      'ParameterError'
-    );
+    throw new ErrorAO({ MAIN: ['Missing parameters'] }, 'ParameterError');
   }
   if (
     !reqKeys.every((key: string) => {
@@ -89,7 +84,7 @@ export const parameterChecker = (
     })
   ) {
     throw new ErrorAO(
-      { MAIN: [['parameter', 'Invalid request, got invalid parameters']] },
+      { MAIN: ['Invalid request, got invalid parameters'] },
       'ParameterError'
     );
   }
@@ -100,19 +95,14 @@ export const parameterChecker = (
     options.needOneOptional
   ) {
     errorArray.MAIN = [
-      [
-        'parameter',
-        `Missing one of the following parameters: ${optionalParams.join(', ')}`,
-      ],
+      `Missing one of the following parameters: ${optionalParams.join(', ')}`,
     ];
   }
   for (let i = 0; i < params.length; i++) {
     const key: string = params[i];
     const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
     if (!reqKeys.includes(key)) {
-      errorArray[key] = [
-        ['parameter', `${errorKey} is missing and it's needed`],
-      ];
+      errorArray[key] = [`${errorKey} is missing and it's needed`];
     }
   }
   if (Object.keys(errorArray).length) {

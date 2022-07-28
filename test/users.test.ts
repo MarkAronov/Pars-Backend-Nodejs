@@ -56,8 +56,6 @@ test('Should not sign up for a new user due to email', async () => {
       password: 'Password12345678',
     })
     .expect(400);
-
-  console.log(response.text);
 });
 
 test('Should not sign up for a new user due to name', async () => {

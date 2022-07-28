@@ -112,7 +112,6 @@ router.patch('/posts/:id', auth, async (req: any, res: Response) => {
     }
     for (const updatedParentID of updatedParents) {
       const updatedParent = await Post.findById(updatedParentID);
-      console.log(updatedParent);
       if (!updatedParent) return res.status(404).send();
       if (updatedParent.equals(post._id))
         return res.status(403).send('You cannot reply to yourself');

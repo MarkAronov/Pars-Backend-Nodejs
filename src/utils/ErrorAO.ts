@@ -6,7 +6,7 @@ class ErrorAO extends Error {
     | {
         [key: string]: string[];
       }
-    | string[][];
+    | string[];
 
   /**
    * the constructor

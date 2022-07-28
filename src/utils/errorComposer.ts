@@ -1,40 +1,29 @@
-
 const errorComposer = (error: any) => {
-  const errorArray: { [key: string]: any } = {};
+  const errorArray: { [key: string]: string[] } = {};
   const errorKeys: Array<string> = Object.keys(error.errors);
-
   errorKeys.forEach((key: any) => {
-    const keyType = key as keyof typeof String;
-    const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
-    console.log(errorKey,error.errors[keyType]);
-    if (!errorArray[key]) errorArray[keyType] = [];
-    //   if (error.errors[keyType].error) {
-    //     errorArray[key] = error.errors[keyType].error.errorArray;
-    //   }
-    //   if (error.errors[keyType].properties.type === 'required') {
-    //     errorArray[key].push([
-    //       'validation',
-    //       `${errorKey} is being currently used, try another`,
-    //     ]);
-    //   }
-    //   if (error.errors[keyType].kind === 'maxlength' && key !== 'displayName') {
-    //     errorArray[key].push([
-    //       'validation',
-    //       error.errors[keyType].properties.message,
-    //     ]);
-    //   }
-    //   if (
-    //     (key === 'email' || key === 'username') &&
-    //     error.errors[keyType].properties.type === 'unique'
-    //   ) {
-    //     errorArray[key].push([
-    //       'dupe',
-    //       `${errorKey} is already used, try a different one`,
-    //     ]);
-    //   }
-    //   if (error.errors[keyType].properties.type === 'required') {
-    //     errorArray[key].push(['required', `${errorKey} is empty`]);
-    //   }
+    const CapKey = key.charAt(0).toUpperCase() + key.slice(1);
+    if (!errorArray[key]) errorArray[key] = [];
+
+    const errExtract = error.errors[key].properties.reason;
+    if (errExtract) {
+      errorArray[key] = errExtract.errorArray;
+    }
+
+    const dupeMessage = error.errors[key].properties.message;
+    if (dupeMessage === 'dupe') {
+      errorArray[key].push(
+        `${CapKey} is being currently used, try a different one`
+      );
+    }
+
+    if (error.errors[key].kind === 'maxlength' && key !== 'displayName') {
+      errorArray[key].push(error.errors[key].properties.message);
+    }
+
+    if (error.errors[key].properties.type === 'required') {
+      errorArray[key].push(`${CapKey} is empty`);
+    }
   });
   return errorArray;
 };
