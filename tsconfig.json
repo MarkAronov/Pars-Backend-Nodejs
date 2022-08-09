@@ -53,6 +53,7 @@
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"],
   "ts-node": {
-    "esm": true
+    "esm": true,
+    "swc": true
   }
 }

@@ -3,13 +3,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 
-import { User } from '../models/usersModel.js';
 import auth from '../middleware/auth.js';
+import { User } from '../models/usersModel.js';
 import { userMulter } from '../middleware/multer.js';
-import errorComposer from '../utils/errorComposer.js';
-import { parameterChecker } from '../utils/checkers.js';
-import dirName from '../utils/dirName.js';
-import { Error } from 'mongoose';
+import { errorComposer, parameterChecker, dirName } from '../utils/utils.js';
 
 const router = express.Router();
 
@@ -125,7 +122,7 @@ router.get('/users/:username', async (req, res) => {
     if (!user.settings.hidePosts) {
       await user.populate('posts');
     }
-
+    // if(user.settings)
     return res.status(200).send(user.toLimitedJSON(2));
   } catch (error: any) {
     return res.status(500).send(error.toString());

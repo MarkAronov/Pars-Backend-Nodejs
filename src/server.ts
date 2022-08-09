@@ -7,31 +7,10 @@
 import app from './app.js';
 import debugImport from 'debug';
 import * as http from 'http';
-
+import { normalizePort } from './utils/utils.js';
 const debug = debugImport('backend-nodejs:server');
 
-// type NormalizePortType = string | number | boolean;
 
-/**
- * Normalize a port into a number, string, or false.
- * @param {string} val
- * @return {any}
- */
-const normalizePort = (val: string) => {
-  const port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-};
 
 /**
  * Get port from environment and store in Express.

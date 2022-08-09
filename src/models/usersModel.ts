@@ -10,7 +10,7 @@ import {
   usernameChecker,
   passwordChecker,
   emailChecker,
-} from '../utils/checkers.js';
+} from '../utils/utils.js';
 import ErrorAO from '../utils/ErrorAO.js';
 
 const schemaOptions: any = {

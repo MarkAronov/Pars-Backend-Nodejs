@@ -9,6 +9,11 @@ const userMediaTypes = [
   { name: 'avatar', maxCount: 1 },
   { name: 'backgroundImage', maxCount: 1 },
 ];
+const postMediaTypes = [
+  { name: 'videos', maxCount: 1 },
+  { name: 'images', maxCount: 5 },
+  { name: 'datafiles', maxCount: 3 },
+];
 
 const userMediaUpload = multer({
   limits: {
@@ -32,14 +37,31 @@ const userMediaUpload = multer({
       cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
     },
   }),
-  // fileFilter(req, file, callback) {
-  //   if (!file.originalname.match(/\.(jpg|png|gif)$/)) {
-  //     return callback(
-  //       new Error('The only formats allowed are PNG, JPG and GIF')
-  //     );
-  //   }
-  //   callback(undefined, true);
-  // },
+});
+
+const postMediaUpload = multer({
+  limits: {
+    fileSize: 75 * megabyte,
+    files: 5,
+  },
+  storage: multer.diskStorage({
+    destination: async (
+      req: any,
+      file: { fieldname: any },
+      cb: (arg0: null, arg1: string) => void
+    ) => {
+      cb(null, `./media/${file.fieldname}`);
+    },
+    filename: async (
+      req: any,
+      file: { fieldname: string },
+      cb: (arg0: null, arg1: string) => void
+    ) => {
+      const uniqueSuffix = crypto.randomBytes(16).toString('hex');
+      cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
+    },
+  }),
 });
 
 export const userMulter = userMediaUpload.fields(userMediaTypes);
+export const postMulter = postMediaUpload.fields(postMediaTypes);

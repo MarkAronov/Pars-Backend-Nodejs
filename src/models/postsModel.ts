@@ -21,7 +21,7 @@ const PostSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     user: {
@@ -48,6 +48,9 @@ const PostSchema = new mongoose.Schema(
           type: Buffer,
         },
       ],
+    },
+    mediaType: {
+      type: String,
     },
     edited: {
       type: Boolean,
@@ -114,6 +117,7 @@ export interface IPost extends mongoose.Document {
   media: Array<{
     type?: Buffer;
   }>;
+  mediaType: String;
   edited: boolean;
 }
 

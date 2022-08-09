@@ -17,10 +17,10 @@ const auth = async (req: any, res: any, next: () => void) => {
     req.token = uncodedToken;
     req.user = user;
     next();
-  } catch (e: any) {
-    if (e.message === '401')
-      res.status(401).send({ error: 'Authenticate first' });
-    else res.status(500).send(e);
+  } catch (err: any) {
+    if (err.message === '401')
+      res.status(401).send({ MAIN: ['Authenticate first'] });
+    else res.status(500).send(err);
   }
 };
 

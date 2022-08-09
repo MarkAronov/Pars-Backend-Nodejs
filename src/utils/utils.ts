@@ -2,8 +2,64 @@ import { Request } from 'express';
 import validator from 'validator';
 import ErrorAO from './ErrorAO.js';
 
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
 // FUNCTIONS
-export const filterDupes = (arr = []) => {
+
+export const errorComposer = (error: any) => {
+  const errorArray: { [key: string]: string[] } = {};
+  const errorKeys: Array<string> = Object.keys(error.errors);
+  errorKeys.forEach((key: any) => {
+    const CapKey = key.charAt(0).toUpperCase() + key.slice(1);
+
+    const errExtract = error.errors[key].properties.reason;
+    if (errExtract) {
+      errorArray[key] = errExtract.errorArray;
+    }
+
+    const dupeMessage = error.errors[key].properties.message;
+    if (dupeMessage === 'dupe') {
+      errorArray[key] = [
+        `${CapKey} is being currently used, try a different one`,
+      ];
+    }
+
+    if (error.errors[key].kind === 'maxlength' && key !== 'displayName') {
+      errorArray[key] = [error.errors[key].properties.message];
+    }
+
+    if (error.errors[key].properties.type === 'required') {
+      errorArray[key] = [`${CapKey} is empty`];
+    }
+  });
+  return errorArray;
+};
+
+export const dirName = () => {
+  return dirname(fileURLToPath(import.meta.url));
+};
+
+/**
+ * Normalize a port into a number, string, or false.
+ * @param {string} val
+ * @return {any}
+ */
+export const normalizePort = (val: string): any => {
+  const port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    return val;
+  }
+
+  if (port >= 0) {
+    return port;
+  }
+
+  return false;
+};
+
+export const filterDupes = (arr: string[] = []) => {
   const map = new Map();
   let filtered: Array<string> = [];
   for (const a of arr) {
@@ -15,7 +71,7 @@ export const filterDupes = (arr = []) => {
   return filtered;
 };
 
-export const usernameChecker = (str = '') => {
+export const usernameChecker = (str: string = ''): string[] => {
   const nameErrors = [];
 
   if (validator.contains(str, ' '))
@@ -25,14 +81,14 @@ export const usernameChecker = (str = '') => {
   return nameErrors;
 };
 
-export const emailChecker = (str = '') => {
+export const emailChecker = (str: string = ''): string[] => {
   const emailErrors = [];
 
   if (!validator.isEmail(str)) emailErrors.push('Invalid email');
   return emailErrors;
 };
 
-export const passwordChecker = (str = '') => {
+export const passwordChecker = (str: string = ''): string[] => {
   const passwordErrors = [];
   const lowercase = str.match(/[a-z]/);
   const uppercase = str.match(/[A-Z]/);
@@ -50,12 +106,9 @@ export const passwordChecker = (str = '') => {
   return passwordErrors;
 };
 
-export const entropy = (str: {
-  length: number;
-  split: (arg0: string) => never[] | undefined;
-}) => {
+export const entropy = (str: string): number => {
   // Password entropy
-  const E = str.length * Math.log2(filterDupes(str.split('')).length);
+  const E: number = str.length * Math.log2(filterDupes(str.split('')).length);
 
   return E;
 };
@@ -64,11 +117,14 @@ export const parameterChecker = (
   req: Request,
   params: Array<string> = [],
   optionalParams: Array<string> = [],
-  options = {
+  options: { [key: string]: boolean } = {
     needOneOptional: true,
+    isJSONString: false,
   }
-) => {
-  const reqKeys = Object.keys(req.body);
+): void => {
+  const reqKeys = Object.keys(
+    options.isJSONString ? JSON.parse(req.body.jsoncontent) : req.body
+  );
   const errorArray:
     | {
         [key: string]: string[];

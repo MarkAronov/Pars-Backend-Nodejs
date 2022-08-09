@@ -3,7 +3,7 @@ import path from 'path';
 import cors from 'cors';
 import logger from 'morgan';
 import { connect } from './database/mongoose.js';
-import dirName from './utils/dirName.js';
+import { dirName } from './utils/utils.js';
 
 import usersRouter from './routes/usersRoute.js';
 import postsRouter from './routes/postsRoute.js';
@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 
 dotenv.config({
   path: path.join(
-    `${process.cwd()}\\config\\`,
+    `${process.cwd()}/config/`,
     `.env${process.env.NODE_ENV === 'test' ? '.test' : '.dev'}`
   ),
 });

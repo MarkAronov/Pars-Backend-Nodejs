@@ -1,9 +1,14 @@
 import express, { Request, Response } from 'express';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileTypeFromFile } from 'file-type';
+
 import mongoose from 'mongoose';
 import auth from '../middleware/auth.js';
 import { Post } from '../models/postsModel.js';
-import { filterDupes } from '../utils/checkers.js';
-import { parameterChecker } from '../utils/checkers.js';
+import { postMulter } from '../middleware/multer.js';
+import { filterDupes, parameterChecker, dirName } from '../utils/utils.js';
+
 const router = express.Router();
 
 // / POST ROUTES ///
@@ -32,52 +37,80 @@ router.get('/posts/:id', async (req: Request, res: Response) => {
 });
 
 // POST request for creating Post.
-router.post('/posts', auth, async (req: any, res: Response) => {
-  try {
-    parameterChecker(
-      req,
-      ['title', 'content'],
-      ['mainPost', 'mentionedParents'],
-      {
-        needOneOptional: false,
-      }
-    );
+router.post(
+  '/posts',
+  auth,
+  postMulter,
+  async (req: any, res: Response) => {
+    console.log(req.body, req.files, Object.keys(req));
+    // parameterChecker(req);
+    // if (mediaType !== 'avatar' && mediaType !== 'backgroundImage') {
+    //   return res
+    //     .status(400)
+    //     .send('Either upload an avatar or a background image');
+    // }
+    // if (req.files !== undefined) {
+    //   const whiteListedTypes = ['png', 'jpg', 'gif'];
+    //   const filePath = path.join(dirName(), `../../media/${mediaType}s`);
+    //   const filename = req.files[mediaType][0].filename;
+    //   const meta = await fileTypeFromFile(req.files[mediaType][0].path);
 
-    const post = new Post({ ...req.body, user: req.user._id });
-    const mentionedParents = req.body.mentionedParents
-      ? filterDupes(req.body.mentionedParents.slice())
-      : [];
+    //   if (meta === undefined || !whiteListedTypes.includes(meta.ext)) {
+    //     await fs.unlink(`${filePath}/${filename}`);
+    //     return res
+    //       .status(400)
+    //       .send('The only formats allowed are PNG, JPG and GIF');
+    //   }
+    //   const fullName = `${filename}.${meta.ext}`;
 
-    if (req.body.mainPost) {
-      const mainPost = await Post.findById(req.body.mainPost);
-      if (!mainPost)
-        return res
-          .status(404)
-          .send(`No main post by that ID: ${req.body.mainPost}`);
-      post.mainPost = new mongoose.Types.ObjectId(mainPost._id);
-    }
+    //   try {
+    //     if (req.user[mediaType]) {
+    //       await fs.unlink(`${filePath}/${req.user[mediaType]}`);
+    //     }
+    //   } catch (error) {}
+    //   await fs.rename(`${filePath}/${filename}`, `${filePath}/${fullName}`);
+    //   req.user[mediaType] = fullName;
+    //   await req.user.save();
+    //   return res.status(200).send(fullName);
+    // } else return res.status(400).send();
 
-    for (const parentID of mentionedParents) {
-      const parent = await Post.findById(parentID);
-      if (!parent)
-        return res.status(404).send(`No parent by that ID: ${parentID}`);
-      if (parent._id.equals(post._id))
-        return res.status(400).send('You cannot reply to yourself');
-    }
-    for (const parentID of mentionedParents) {
-      const parent = await Post.findById(parentID);
-      post.mentionedParents = post.mentionedParents.concat(parent._id);
-    }
-    await post.save();
-    const fullPost = await post.toCustomJSON();
-    return res.status(200).send(fullPost);
-  } catch (error: any) {
+    // const post = new Post({ ...req.body, user: req.user._id });
+    // const mentionedParents = req.body.mentionedParents
+    //   ? filterDupes(req.body.mentionedParents.slice())
+    //   : [];
+
+    // if (req.body.mainPost) {
+    //   const mainPost = await Post.findById(req.body.mainPost);
+    //   if (!mainPost)
+    //     return res
+    //       .status(404)
+    //       .send(`No main post by that ID: ${req.body.mainPost}`);
+    //   post.mainPost = new mongoose.Types.ObjectId(mainPost._id);
+    // }
+
+    // for (const parentID of mentionedParents) {
+    //   const parent = await Post.findById(parentID);
+    //   if (!parent)
+    //     return res.status(404).send(`No parent by that ID: ${parentID}`);
+    //   if (parent._id.equals(post._id))
+    //     return res.status(400).send('You cannot reply to yourself');
+    // }
+    // for (const parentID of mentionedParents) {
+    //   const parent = await Post.findById(parentID);
+    //   post.mentionedParents = post.mentionedParents.concat(parent._id);
+    // }
+    // await post.save();
+    // const fullPost = await post.toCustomJSON();
+    // return res.status(200).send(fullPost);
+    return res.status(200).send();
+  },
+  (error: any, _req: Request, res: Response) => {
     if (error.name === 'ParameterError' || error.name === 'VerificationError') {
       return res.status(400).send(error.errorArray);
     }
     return res.status(500).send(error.toString());
   }
-});
+);
 
 // DELETE request to delete Post.
 router.delete('/posts/:id', auth, async (req: any, res: Response) => {
