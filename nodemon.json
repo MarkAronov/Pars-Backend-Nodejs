@@ -2,5 +2,6 @@
   "ignore": [".git", "node_modules", "dist", "./src/**/*.spec.ts"],
   "watch": ["src"],
   "exec": "ts-node ./src/server.ts && eslint .",
-  "ext": "js, json, ts, proto"
+  "ext": "js, json, ts, proto",
+  "test": "-f ./config/test.env jest --watchAll --detectOpenHandles --silent=false"
 }

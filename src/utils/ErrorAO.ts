@@ -2,30 +2,33 @@
  * An error array class for better error handling
  */
 class ErrorAO extends Error {
-  errorArray:
+  errorAO:
     | {
         [key: string]: string[];
       }
     | string[];
+  status: number;
 
   /**
    * the constructor
-   * @param {Array} errorArray the error array list
+   * @param {Array} errorAO the error array list or object list
    * @param {string} name the error name
    * @param {array} params the other parameters
    */
   constructor(
-    errorArray?:
+    errorAO?:
       | {
           [key: string]: string[];
         }
       | string[],
     name?: string,
-    ...params: Array<string>
+    status?: number,
+    ...params: string[]
   ) {
     super(...params);
     this.name = name ? name : '';
-    this.errorArray = errorArray ? errorArray : {};
+    this.status = status ? status : 400;
+    this.errorAO = errorAO ? errorAO : {};
   }
 }
 

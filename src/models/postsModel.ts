@@ -42,13 +42,7 @@ const PostSchema = new mongoose.Schema(
         },
       ],
     },
-    media: {
-      type: [
-        {
-          type: Buffer,
-        },
-      ],
-    },
+    media: [String],
     mediaType: {
       type: String,
     },
@@ -113,10 +107,8 @@ export interface IPost extends mongoose.Document {
   content: string;
   user: mongoose.Types.ObjectId;
   mainPost: mongoose.Types.ObjectId;
-  mentionedParents: Array<mongoose.Types.ObjectId>;
-  media: Array<{
-    type?: Buffer;
-  }>;
+  mentionedParents: mongoose.Types.ObjectId[];
+  media: string[] ;
   mediaType: String;
   edited: boolean;
 }
@@ -133,5 +125,3 @@ export const Post: IPostModel = mongoose.model<IPostDocument, IPostModel>(
   'Post',
   PostSchema
 );
-
-// Export model

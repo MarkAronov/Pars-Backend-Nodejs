@@ -118,9 +118,7 @@ UserSchema.virtual('posts', {
 UserSchema.method('generateToken', async function generateToken() {
   const user = this;
 
-  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING!, {
-    expiresIn: '2 days',
-  });
+  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING!);
   user.tokens = user.tokens.concat({ token });
   await user.save();
   return token;
@@ -149,38 +147,6 @@ UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevevl: number) {
   }
   return userObject;
 });
-
-UserSchema.static(
-  'verifyParameters',
-  async function verifyParameters(req: {
-    body: { [x: string]: any };
-    user: { [x: string]: any; formerPasswords: string | any[] };
-  }) {
-    const errorArray: {
-      [key: string]: string[];
-    } = {};
-    const reqKeys = Object.keys(req.body);
-
-    for (let i = 0; i < reqKeys.length; i++) {
-      const key = reqKeys[i];
-      const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
-      if (key === 'newPassword') {
-        for (let j = 0; j < req.user.formerPasswords.length; j++) {
-          const keyPass = req.user.formerPasswords[j];
-          if (await bcrypt.compare(req.body[key], keyPass)) {
-            errorArray.password = ['Password was formally used, use another.'];
-          }
-        }
-      }
-      if (req.user[key] === req.body[key]) {
-        errorArray[key] = [`${errorKey} is being currently used, try another.`];
-      }
-    }
-    if (Object.keys(errorArray).length) {
-      throw new ErrorAO(errorArray, 'VerificationError');
-    }
-  }
-);
 
 UserSchema.static(
   'verifyCredentials',
@@ -242,16 +208,16 @@ export interface IUser extends mongoose.Document {
   email: string;
   password: string;
   bio: string;
-  tokens: Array<{
+  tokens: {
     token: string;
-  }>;
+  }[];
   avatar: string;
   backgroundImage: string;
   settings: {
     hideWhenMade: Boolean;
     hidePosts: Boolean;
   };
-  formerPasswords: Array<string>;
+  formerPasswords: string[];
 }
 
 UserSchema.plugin(uniqueValidator, { message: 'dupe' });
@@ -263,10 +229,6 @@ interface IUserDocument extends IUser {
 
 export interface IUserModel extends mongoose.Model<IUserDocument> {
   verifyPassword(user: IUserModel, currentPassword: string);
-  verifyParameters(req: {
-    body: { [x: string]: any };
-    user: { [x: string]: any; formerPasswords: string | any[] };
-  }): any;
   verifyCredentials(email: string, password: string): any;
 }
 

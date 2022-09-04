@@ -1,27 +1,34 @@
 import jsonwebtoken from 'jsonwebtoken';
+import ErrorAO from '../utils/ErrorAO.js';
 import { User } from '../models/usersModel.js';
 
 const auth = async (req: any, res: any, next: () => void) => {
-  try {
-    if (!req.header('Authorization')) throw new Error('401');
-    const uncodedToken = req.header('Authorization').replace('Bearer ', '');
-    const decodedToken: any = jsonwebtoken.verify(
-      uncodedToken,
-      process.env.JWT_STRING!
+  if (!req.header('Authorization')) {
+    throw new ErrorAO(
+      { MAIN: ['Authenticate method is invalid'] },
+      'AuthenticationError',
+      401
     );
-    const user = await User.findOne({
-      _id: decodedToken.id,
-      'tokens.token': uncodedToken,
-    });
-    if (!user) throw new Error('401');
-    req.token = uncodedToken;
-    req.user = user;
-    next();
-  } catch (err: any) {
-    if (err.message === '401')
-      res.status(401).send({ MAIN: ['Authenticate first'] });
-    else res.status(500).send(err);
   }
+  const uncodedToken = req.header('Authorization').replace('Bearer ', '');
+  const decodedToken: any = jsonwebtoken.verify(
+    uncodedToken,
+    process.env.JWT_STRING!
+  );
+  const user = await User.findOne({
+    _id: decodedToken.id,
+    'tokens.token': uncodedToken,
+  });
+  if (!user) {
+    throw new ErrorAO(
+      { MAIN: ['Authenticate first'] },
+      'AuthenticationError',
+      401
+    );
+  }
+  req.token = uncodedToken;
+  req.user = user;
+  next();
 };
 
 export default auth;

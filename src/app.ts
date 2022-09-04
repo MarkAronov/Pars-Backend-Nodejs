@@ -11,6 +11,8 @@ import miscRouter from './routes/miscRoutes.js';
 import expressStatusMonitor from 'express-status-monitor';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import errorHandler from './middleware/errorHandler.js';
+import jsonParser from './middleware/jsonParser.js';
 
 dotenv.config({
   path: path.join(
@@ -31,9 +33,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(dirName(), 'public')));
 
+app.use(jsonParser);
 app.use(usersRouter);
 app.use(postsRouter);
 app.use(miscRouter);
+app.use(errorHandler);
+
 console.clear();
-console.log('Working!');
+console.log('Listening');
 export default app;

@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "fd22abe7-ace8-45e9-8a86-13cefa14f487",
+		"_postman_id": "0dcf095a-48d5-4d8c-8bc8-a906d04a7aed",
 		"name": "Pars requests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -120,7 +120,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"bb@dd.com\"\r\n\r\n}",
+							"raw": "{\r\n    \"email\": \"bb@dd.com\",\r\n    \"password\": \"bbDFFDF232\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -191,13 +191,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/users/testman-2/avatar",
+							"raw": "{{url}}/users/asda/avatar",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"users",
-								"testman-2",
+								"asda",
 								"avatar"
 							]
 						}
@@ -234,7 +234,7 @@
 								{
 									"key": "avatar",
 									"type": "file",
-									"src": "/D:/Media/G-FuckFaces/696902119864c43a8fece33fe6ba5f2f.jpg"
+									"src": "/D:/Media/Other-FuckFaces/227452.png"
 								}
 							],
 							"options": {
@@ -479,8 +479,38 @@
 						"method": "POST",
 						"header": [],
 						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"testing-2\",\r\n    \"content\": \"some TESTS\",\r\n    \"main_post\": \"619188102eecbd4e8f785da2\",\r\n    \"parents_ids\": [ ]\r\n}\r\n",
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "jsoncontent",
+									"value": "\"{\\n  \\\"title\\\": \\\"New version\\\",\\n  \\\"content\\\": \\\"Just look at that, It works!\\\"\\n}\\n\"",
+									"type": "text"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": [
+										"/D:/Media/Other-FuckFaces/`.jpg",
+										"/D:/Media/Other-FuckFaces/2d8efe34c2c4f1869549b848a04b68b7.jpg"
+									],
+									"disabled": true
+								},
+								{
+									"key": "videos",
+									"type": "file",
+									"src": [
+										"/D:/Media/Other-FuckFaces/41sCt1nBbCL._AC_.jpg",
+										"/D:/Media/Other-FuckFaces/51HhjHR-r0L._SX260_.jpg"
+									],
+									"disabled": true
+								},
+								{
+									"key": "datafiles",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								}
+							],
 							"options": {
 								"raw": {
 									"language": "json"

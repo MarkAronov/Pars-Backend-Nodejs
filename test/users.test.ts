@@ -1,8 +1,8 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import app from '../src/app';
-import User from '../src/models/usersModel';
+import app from '../src/app.js';
+import { User } from '../src/models/usersModel.js';
 
 const userID = new mongoose.Types.ObjectId();
 const testUser = {
@@ -12,7 +12,7 @@ const testUser = {
   _id: userID,
   tokens: [
     {
-      token: jwt.sign({ id: userID }, process.env.JWT_STRING, {
+      token: jwt.sign({ id: userID }, process?.env?.JWT_STRING, {
         expiresIn: '14d',
       }),
     },
@@ -41,10 +41,10 @@ test('Should sign up a new user', async () => {
       name: 'test2',
       email: 'test2@testing.com',
     },
-    token: user.tokens[0].token,
+    token: user?.tokens[0].token,
   });
 
-  expect(user.password).not.toBe('Password12345678');
+  expect(user?.password).not.toBe('Password12345678');
 });
 
 test('Should not sign up for a new user due to email', async () => {
