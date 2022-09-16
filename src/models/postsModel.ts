@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
 
 const schemaOptions: any = {
   toJSON: {
@@ -44,6 +45,7 @@ const PostSchema = new mongoose.Schema(
     },
     media: [String],
     mediaType: {
+      default: null,
       type: String,
     },
     edited: {
@@ -78,6 +80,14 @@ PostSchema.method('toCustomJSON', async function toCustomJSON() {
 
 PostSchema.pre('remove', async function preRemove(next: () => void) {
   const post: any = this;
+
+  if (post.mediaType) {
+    post.media.forEach(async (element) => {
+      const filePath = `.\\media\\${post.mediaType}\\${element}`;
+      if (fs.existsSync(filePath)) fs.rm(filePath, () => {});
+    });
+  }
+
   if (post.mainPost === null) {
     await post.populate('mainPostChildren');
     for (const childId of post.mainPostChildren) {
@@ -108,7 +118,7 @@ export interface IPost extends mongoose.Document {
   user: mongoose.Types.ObjectId;
   mainPost: mongoose.Types.ObjectId;
   mentionedParents: mongoose.Types.ObjectId[];
-  media: string[] ;
+  media: string[];
   mediaType: String;
   edited: boolean;
 }

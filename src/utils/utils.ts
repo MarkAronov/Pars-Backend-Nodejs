@@ -1,13 +1,10 @@
 import { Request } from 'express';
 import validator from 'validator';
-import ErrorAO from './ErrorAO.js';
-import fs from 'fs/promises';
-import bcrypt from 'bcryptjs';
+import { fileTypeFromFile } from 'file-type';
+import fs from 'fs';
 
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { fileTypeFromFile } from 'file-type';
-import { Post } from '../models/postsModel.js';
 // FUNCTIONS
 
 export const dirName = () => {
@@ -124,170 +121,30 @@ export const multerErrorComposer = (err: any) => {
     LIMIT_FIELD_KEY: 'Field name too long',
     LIMIT_FIELD_VALUE: 'Field value too long',
     LIMIT_FIELD_COUNT: 'Too many fields',
-    LIMIT_UNEXPECTED_FILE: 'Unexpected field',
+    LIMIT_UNEXPECTED_FILE: 'Unexpected file',
     MISSING_FIELD_NAME: 'Field name missing',
   };
 
   return { MAIN: [errorMessages[err.code]] };
 };
 
-export const parameterChecker = async (
-  req: any,
-  params: string[] = [],
-  optionalParams: string[] = [],
-  options: { [key: string]: boolean } = {
-    needOneOptional: true,
-    isJSONString: false,
-    userCheck: false,
-    isPost: false,
-  }
-): Promise<any> => {
-  const reqKeys = Object.keys(options.isJSONString ? req : req.body);
-  const errorArray: {
-    [key: string]: string[];
-  } = {};
-
-  if (reqKeys.length === 0) {
-    throw new ErrorAO({ MAIN: ['Missing parameters'] }, 'ParameterError');
-  }
-  if (
-    !reqKeys.every((key: string) => {
-      return params.includes(key) || optionalParams.includes(key);
-    })
-  ) {
-    throw new ErrorAO(
-      { MAIN: ['Invalid request, got invalid parameters'] },
-      'ParameterError'
-    );
-  }
-
-  if (options.isPost) {
-    const post = await Post.findById(req.params.id);
-    if (!post)
-      throw new ErrorAO(
-        { MAIN: ['No post by that ID'] },
-        'ParameterError',
-        404
-      );
-    if (!post.user._id.equals(req.user._id))
-      throw new ErrorAO(
-        { MAIN: ['You are not allowed to change this post'] },
-        'ParameterError',
-        403
-      );
-  }
-
-  if (
-    optionalParams.length !== 0 &&
-    optionalParams.every((key) => !reqKeys.includes(key)) &&
-    options.needOneOptional
-  ) {
-    errorArray.MAIN = [
-      `Missing one of the following parameters: ${optionalParams.join(', ')}`,
-    ];
-  }
-  for (let i = 0; i < params.length; i++) {
-    const key: string = params[i];
-    const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
-    if (!reqKeys.includes(key)) {
-      errorArray[key] = [`${errorKey} is missing and it's needed`];
-    }
-    if (options.userCheck) {
-      if (key === 'newPassword') {
-        for (let j = 0; j < req.user.formerPasswords.length; j++) {
-          const keyPass = req.user.formerPasswords[j];
-          if (await bcrypt.compare(req.body[key], keyPass)) {
-            errorArray.password = ['Password was formally used, use another.'];
-          }
-        }
-      }
-      if (req.user[key] === req.body[key]) {
-        errorArray[key] = [`${errorKey} is being currently used, try another.`];
-      }
-    }
-  }
-  if (Object.keys(errorArray).length) {
-    throw new ErrorAO(errorArray, 'ParameterError');
-  }
-};
-
-export const fileChecker = async (
-  req: Request,
-  allowedTypes: any,
-  options: { [key: string]: boolean } = {
-    isPatch: false,
-  },
-  post: any = null
-) => {
-  const whiteListedTypes = {
-    images: ['png', 'jpg', 'gif'],
-    videos: ['mp4', 'webm'],
-    datafiles: ['pdf', 'zip'],
-  };
-  const mediaType = Object.keys(req.files)[0];
-  const files = req.files[mediaType];
-
-  if (Object.keys(req.files).length > 1) {
-    throw new ErrorAO(
-      {
-        MAIN: ['You can not send multiple types in the same post'],
-      },
-      'ParameterError'
-    );
-  }
-
-  if (options.isPost) {
-    for (const flaggedFile in req.body?.filesToRemove) {
-      if (!post?.mediaArray.includes(flaggedFile)) {
-        throw new ErrorAO(
-          {
-            MAIN: [`Some of the files don't exist anymore`],
-          },
-          'ParameterError'
-        );
-      }
-    }
-  }
-
-  if (
-    allowedTypes.every((key) => !mediaType.includes(key)) ||
-    (options.isPost &&
-      post.mediaType !== mediaType &&
-      files.length - req.body?.filesToRemove.length !== 0)
-  ) {
-    throw new ErrorAO(
-      {
-        MAIN: [
-          'Either upload a set of images, a set of files or a single video',
-        ],
-      },
-      'ParameterError'
-    );
-  }
-
-  for (let i = 0; i < files.length; i++) {
-    const meta = await fileTypeFromFile(files[i].path);
-    if (!meta || !whiteListedTypes[mediaType].includes(meta.ext)) {
-      throw new ErrorAO(
-        {
-          MAIN: [
-            `The only formats allowed are: ${whiteListedTypes[mediaType].join(
-              ', '
-            )}`,
-          ],
-        },
-        'ParameterError'
-      );
-    }
-  }
-};
-
 export const removeFiles = async (req: Request) => {
   if (!req.files) return;
   Object.keys(req.files).forEach(async (mediaType) => {
     const files = req.files[mediaType];
+    console.log(files);
     for (let i = 0; i < files.length; i++) {
-      await fs.unlink(`..\\..\\${files[i].path}\\${files[i].filename}`);
+      const meta = await fileTypeFromFile(files[i].path);
+      console.log(meta);
+      await fs.rm(
+        `..\\..\\${files[i].path}\\${files[i].filename}`, //.${meta.ext}`,
+        () => {}
+      );
     }
   });
 };
+
+export const wrap =
+  (fn: any) =>
+  (...args: any) =>
+    fn(...args).catch(args[2]);
