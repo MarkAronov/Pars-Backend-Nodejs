@@ -1,6 +1,5 @@
 import { Request } from 'express';
 import validator from 'validator';
-import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
 import { dirname } from 'path';
@@ -125,21 +124,15 @@ export const multerErrorComposer = (err: any) => {
     MISSING_FIELD_NAME: 'Field name missing',
   };
 
-  return { MAIN: [errorMessages[err.code]] };
+  return { media: [errorMessages[err.code]] };
 };
 
 export const removeFiles = async (req: Request) => {
   if (!req.files) return;
   Object.keys(req.files).forEach(async (mediaType) => {
     const files = req.files[mediaType];
-    console.log(files);
     for (let i = 0; i < files.length; i++) {
-      const meta = await fileTypeFromFile(files[i].path);
-      console.log(meta);
-      await fs.rm(
-        `..\\..\\${files[i].path}\\${files[i].filename}`, //.${meta.ext}`,
-        () => {}
-      );
+      await fs.rm(`${files[i].path}`, () => {});
     }
   });
 };

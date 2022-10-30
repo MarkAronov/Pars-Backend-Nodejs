@@ -17,30 +17,48 @@ const router = express.Router();
 
 // / USER ROUTES ///
 
-// GET request for list of all Users.
-router.get('/users/', async (req, res) => {
-  const users = await User.find({});
-  return res.status(200).send(users);
-});
+// POST request for creating User.
+router.post(
+  '/users',
+  userMulter,
+  jsonParser,
+  parameterChecker,
+  utils.wrap(async (req: Request, res: Response) => {
+    const userData = req.body;
+    userData.displayName = req.body.displayName
+      ? req.body.displayName
+      : req.body.username;
+    const createdUser = new User(userData);
 
-// GET request for one User.
-router.get(
-  '/users/:username',
-  utils.wrap(async (req, res) => {
-    const user = await User.findOne({ username: req.params.username });
-    if (!user)
-      throw new ErrorAO(
-        {
-          MAIN: [`No user with that name: ${req.params.username}`],
-        },
-        'VerificationError'
-      );
+    if (Object.keys(req.files).length) {
+      const mediaType = Object.keys(req.files);
 
-    if (!user.settings.hidePosts) {
-      await user.populate('posts');
+      for (let i = 0; i < mediaType.length; i++) {
+        const fileFolderPath = path.join(
+          utils.dirName(),
+          `../../media/${mediaType[i]}s`
+        );
+        const filename = req.files[mediaType[i]][0].filename;
+        const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
+        await fs.rename(
+          `${fileFolderPath}/${filename}`,
+          `${fileFolderPath}/${filename}.${meta.ext}`,
+          () => {}
+        );
+
+        req.files[
+          mediaType[i]
+        ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
+        createdUser[mediaType[i]] = `${filename}.${meta.ext}`;
+      }
     }
 
-    return res.status(200).send(user.toLimitedJSON(2));
+    await createdUser.save();
+
+    const user = createdUser.toLimitedJSON(2);
+    const token = await createdUser.generateToken();
+
+    return res.status(201).send({ user, token });
   })
 );
 
@@ -85,51 +103,30 @@ router.post(
   })
 );
 
-// POST request for creating User.
-router.post(
-  '/users',
-  userMulter,
-  jsonParser,
-  parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
-    const userData = req.body;
-    userData.displayName = req.body.displayName
-      ? req.body.displayName
-      : req.body.username;
-    const createdUser = new User(userData);
+// GET request for list of all Users.
+router.get('/users', async (req, res) => {
+  const users = await User.find({});
+  return res.status(200).send(users);
+});
 
-    if (Object.keys(req.files).length) {
-      const mediaType = Object.keys(req.files)[0];
-      // const fileFolderPath = path.join(
-      //   utils.dirName(),
-      //   `../../media/${mediaType}s`
-      // );
-      const filename = req.files[mediaType][0].filename;
-      const meta = await fileTypeFromFile(req.files[mediaType][0].path);
-      // await fs.rename(
-      //   `${fileFolderPath}/${filename}`,
-      //   `${fileFolderPath}/${filename}.${meta.ext}`,
-      //   () => {}
-      // );
+// GET request for one User.
+router.get(
+  '/users/:username',
+  utils.wrap(async (req, res) => {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user)
+      throw new ErrorAO(
+        {
+          MAIN: [`No user with that name: ${req.params.username}`],
+        },
+        'VerificationError'
+      );
 
-      createdUser[mediaType] = `${filename}.${meta.ext}`;
+    if (!user.settings.hidePosts) {
+      await user.populate('posts');
     }
-    await createdUser.save();
 
-    const user = createdUser.toLimitedJSON(2);
-    const token = await createdUser.generateToken();
-
-    return res.status(201).send({ user, token });
-  })
-);
-
-// DELETE request to delete User.
-router.delete(
-  '/users/me',
-  auth,
-  utils.wrap(async (req: any, res: Response) => {
-    await req.user.remove();
-    return res.status(200).send();
+    return res.status(200).send(user.toLimitedJSON(2));
   })
 );
 
@@ -183,8 +180,42 @@ router.patch(
 
     reqKeys.forEach((key) => (req.user[key] = req.body[key]));
 
+    if (Object.keys(req.files).length) {
+      const mediaType = Object.keys(req.files);
+      for (let i = 0; i < mediaType.length; i++) {
+        const fileFolderPath = path.join(
+          utils.dirName(),
+          `../../media/${mediaType[i]}s`
+        );
+        const filename = req.files[mediaType[i]][0].filename;
+        const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
+        await fs.rename(
+          `${fileFolderPath}/${filename}`,
+          `${fileFolderPath}/${filename}.${meta.ext}`,
+          () => {}
+        );
+
+        req.files[
+          mediaType[i]
+        ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
+        if (req.user[mediaType[i]]) {
+          await fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
+        }
+        req.user[mediaType[i]] = `${filename}.${meta.ext}`;
+      }
+    }
     await req.user.save();
     return res.status(200).send(req.user.toLimitedJSON(req.user, 2));
+  })
+);
+
+// DELETE request to delete User.
+router.delete(
+  '/users/me',
+  auth,
+  utils.wrap(async (req: any, res: Response) => {
+    await req.user.remove();
+    return res.status(200).send();
   })
 );
 

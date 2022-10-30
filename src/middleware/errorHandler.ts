@@ -13,8 +13,11 @@ const errorHandler = async (err, req, res, next) => {
     '/users/me',
     '/users',
   ];
-  console.log(err.name);
-  if (urlsThatUploadFiles.includes(req.route.path) && req.method === 'POST') {
+  console.log(err)
+  if (
+    urlsThatUploadFiles.includes(req.route.path) &&
+    (req.method === 'POST' || req.method === 'PATCH')
+  ) {
     await utils.removeFiles(req);
   }
   if (err.name === 'ValidationError') {

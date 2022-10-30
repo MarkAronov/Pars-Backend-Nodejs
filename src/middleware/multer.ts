@@ -1,67 +1,79 @@
 import multer from 'multer';
 import * as crypto from 'crypto';
-// import { fileTypeFromFile } from 'file-type';
 
-// / MULTER SETTINGS ///
+/// MULTER SETTINGS ///
 const megabyte = 1000000;
 
-const userMediaTypes = [
-  { name: 'avatar', maxCount: 1 },
-  { name: 'backgroundImage', maxCount: 1 },
-];
-const postMediaTypes = [
-  { name: 'videos', maxCount: 1 },
-  { name: 'images', maxCount: 5 },
-  { name: 'datafiles', maxCount: 3 },
-];
-
-const userMediaUpload = multer({
-  limits: {
-    fileSize: 10 * megabyte,
-    files: 1,
+const storage = multer.diskStorage({
+  destination: async (
+    req: any,
+    file: any,
+    cb: (arg0: null, arg1: any) => void
+  ) => {
+    const isUserRoute = req.route.path.toString().indexOf('/users') >= 0;
+    const folder = `./media/${file.fieldname}${isUserRoute ? 's' : ''}`;
+    cb(null, folder);
   },
-  storage: multer.diskStorage({
-    destination: async (
-      req: any,
-      file: { fieldname: any },
-      cb: (arg0: null, arg1: string) => void
-    ) => {
-      cb(null, `./media/${file.fieldname}s`);
-    },
-    filename: async (
-      req: any,
-      file: { fieldname: string },
-      cb: (arg0: null, arg1: string) => void
-    ) => {
-      const uniqueSuffix = crypto.randomBytes(16).toString('hex');
-      cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
-    },
-  }),
+  filename: async (
+    req: any,
+    file: any,
+    cb: (arg0: null, arg1: string) => void
+  ) => {
+    const uniqueSuffix = crypto.randomBytes(16).toString('hex');
+    cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
+  },
 });
 
-const postMediaUpload = multer({
+/// MULTER MIDDLEWARES ///
+
+export const userMulter = multer({
+  limits: {
+    fileSize: 10 * megabyte,
+    files: 2,
+  },
+  storage: storage,
+}).fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'backgroundImage', maxCount: 1 },
+]);
+
+export const postMulter = multer({
   limits: {
     fileSize: 75 * megabyte,
     files: 5,
   },
-  storage: multer.diskStorage({
-    destination: async (
-      req: any,
-      file: { fieldname: any },
-      cb: (arg0: null, arg1: string) => void
-    ) => {
-      cb(null, `./media/${file.fieldname}`);
-    },
-    filename: async (
-      req: any,
-      file: { fieldname: string },
-      cb: (arg0: null, arg1: string) => void
-    ) => {
-      const uniqueSuffix = crypto.randomBytes(16).toString('hex');
-      cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
-    },
-  }),
-});
+  storage: storage,
+}).fields([
+  { name: 'videos', maxCount: 1 },
+  { name: 'images', maxCount: 5 },
+  { name: 'datafiles', maxCount: 3 },
+]);
 
-export const userMulter = userMediaUpload.fields(userMediaTypes);
-export const postMulter = postMediaUpload.fields(postMediaTypes);
+// const multerTypes = {
+//   '/users': multer({
+//     limits: {
+//       fileSize: 10 * megabyte,
+//       files: 2,
+//     },
+//     storage: storage,
+//   }).fields([
+//     { name: 'avatar', maxCount: 1 },
+//     { name: 'backgroundImage', maxCount: 1 },
+//   ]),
+//   '/posts': multer({
+//     limits: {
+//       fileSize: 75 * megabyte,
+//       files: 5,
+//     },
+//     storage: storage,
+//   }).fields([
+//     { name: 'videos', maxCount: 1 },
+//     { name: 'images', maxCount: 5 },
+//     { name: 'datafiles', maxCount: 3 },
+//   ]),
+// };
+
+// export const preMulter = (req, res, next) => {
+//   const routeType = req.route.path.slice(0, 6);
+//   return [multerTypes[routeType]];
+// };

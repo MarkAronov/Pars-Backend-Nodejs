@@ -1,39 +1,49 @@
 import ErrorAO from '../utils/ErrorAO.js';
 import bcrypt from 'bcryptjs';
+import _ from 'lodash';
 
-import { fileTypeFromFile } from 'file-type';
+import * as utils from '../utils/utils.js';
+// import { fileTypeFromFile } from 'file-type';
 import { Post } from '../models/postsModel.js';
+import { User } from '../models/usersModel.js';
 
 const requestMap = {
-  GET: { '/posts/:id': { requiredParams: [], optionalParams: [] } },
   POST: {
-    '/posts': {
-      requiredParams: ['title'],
-      optionalParams: ['content', 'mainPost', 'mentionedParents'],
-    },
     '/users': {
       requiredParams: ['email', 'username', 'password'],
-      optionalParams: ['displayName', 'avatar', 'backgroundImage'],
+      optionalParams: [
+        'displayName',
+        'bio',
+        'hideWhenMade',
+        'hidePosts',
+        'avatar',
+        'backgroundImage',
+      ],
     },
     '/users/login': {
       requiredParams: ['email', 'password'],
       optionalParams: [],
     },
-  },
-  DELETE: { '/posts/:id': { requiredParams: [], optionalParams: [] } },
-  PATCH: {
-    '/posts/:id': {
-      requiredParams: [],
+    '/users/logout': { requiredParams: [], optionalParams: [] },
+    '/users/logoutall': { requiredParams: [], optionalParams: [] },
+    '/posts': {
+      requiredParams: ['title'],
       optionalParams: [
-        'title',
         'content',
         'mainPost',
         'mentionedParents',
-        'filesToRemove',
-        'avatar',
-        'backgroundImage',
+        'images',
+        'videos',
+        'datafiles',
       ],
     },
+  },
+  GET: {
+    '/users': { requiredParams: [], optionalParams: [] },
+    '/users/:username': { requiredParams: [], optionalParams: [] },
+    '/posts/:id': { requiredParams: [], optionalParams: [] },
+  },
+  PATCH: {
     '/users/me/password': {
       requiredParams: ['currentPassword', 'newPassword'],
       optionalParams: [],
@@ -44,166 +54,225 @@ const requestMap = {
     },
     '/users/me/regular': {
       requiredParams: [],
-      optionalParams: ['displayName', 'bio', 'hideWhenMade', 'hidePosts'],
+      optionalParams: [
+        'displayName',
+        'bio',
+        'hideWhenMade',
+        'hidePosts',
+        'avatar',
+        'backgroundImage',
+      ],
     },
+    '/posts/:id': {
+      requiredParams: [],
+      optionalParams: [
+        'title',
+        'content',
+        'mainPost',
+        'mentionedParents',
+        'filesToRemove',
+        'images',
+        'videos',
+        'datafiles',
+      ],
+    },
+  },
+  DELETE: {
+    '/users/me': { requiredParams: [], optionalParams: [] },
+    '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
 };
 
-const whiteListedFileTypes = {
-  images: ['png', 'jpg', 'gif'],
-  videos: ['mp4', 'webm'],
-  datafiles: ['pdf', 'zip'],
-};
+// const whiteListedFileTypes = {
+//   avatar: ['png', 'jpg', 'gif'],
+//   backgroundImage: ['png', 'jpg', 'gif'],
+//   images: ['png', 'jpg', 'gif'],
+//   videos: ['mp4', 'webm'],
+//   datafiles: ['pdf', 'zip'],
+// };
 
-const urlsThatUploadFiles = [
-  '/posts',
-  '/users/me/:mediatype',
-  '/posts/:id',
-  '/users/me',
-];
+// const allowedMediaTypes = {
+//   '/users': ['avatar', 'backgroundImage'],
+//   '/posts': ['images', 'videos', 'datafiles'],
+// };
 
-const allowedMediaTypes = {
-  '/users/': [
-    ['avatar', 'backgroundImage'],
-    'Either upload an avatar or a background image',
-  ],
-  '/posts/': [
-    ['images', 'videos', 'datafiles'],
-    'Either upload a set of images, a set of files or a single video',
-  ],
-};
+// const mediaTypesErrorString = {
+//   '/users': 'Either upload an avatar or/and a background image',
+//   '/posts': 'Either upload a set of images, a set of files or a single video',
+// };
 
-const parameterChecker = async (req: any, res: any, next: () => void) => {
-  const reqKeys = Object.keys(req.body);
-  const requiredParams = requestMap[req.method][req.route.path].requiredParams;
-  const optionalParams = requestMap[req.method][req.route.path].optionalParams;
+const parameterChecker = utils.wrap(
+  async (req: any, res: any, next: () => void) => {
+    let reqKeys = req.body ? Object.keys(req.body) : [];
+    reqKeys = req.files ? reqKeys.concat(Object.keys(req.files)) : reqKeys;
 
-  const parameterFreeRequest = !requiredParams.length && !optionalParams.length;
-  const needOneOptionalParam = req.method === 'PATCH';
-  const isPostRequest = req.route.path.indexOf('/posts/') >= 0;
-  const isUserRequest = req.route.path.indexOf('/users/') >= 0;
+    const requiredParams =
+      requestMap[req.method][req.route.path]?.requiredParams;
+    const optionalParams =
+      requestMap[req.method][req.route.path]?.optionalParams;
 
-  // First case,
-  if (isPostRequest) {
-    const post = await Post.findById(req.params.id);
-    if (!post)
-      throw new ErrorAO(
-        { MAIN: [`No post by that ID: ${req.params.id}`] },
-        'ParameterError',
-        404
-      );
-    if (!post.user._id.equals(req.user._id))
-      throw new ErrorAO(
-        { MAIN: ['You are not allowed to change/delete this post'] },
-        'ParameterError',
-        403
-      );
-  }
+    const parameterFreeRequest =
+      !requiredParams.length && !optionalParams.length;
 
-  // Second case, check if there are missing parameters from the request
-  if (reqKeys.length === 0 && !parameterFreeRequest) {
-    throw new ErrorAO({ MAIN: ['Missing parameters'] }, 'ParameterError');
-  }
+    const isPatchMethod = req.method === 'PATCH';
+    const isPostRequest = req.route.path.indexOf('/posts') >= 0;
+    const isUserRequest = req.route.path.indexOf('/users') >= 0;
 
-  // Third case, check if there are unwanted parameters
-  if (
-    !reqKeys.every((key: string) => {
-      return requiredParams.includes(key) || optionalParams.includes(key);
-    })
-  ) {
-    throw new ErrorAO(
-      { MAIN: ['Invalid request, got invalid parameters'] },
-      'ParameterError'
-    );
-  }
+    let dupeFlag = false;
+    const errorArray: {
+      [key: string]: string[];
+    } = {};
 
-  const errorArray: {
-    [key: string]: string[];
-  } = {};
-  if (
-    optionalParams.length !== 0 &&
-    optionalParams.every((key) => !reqKeys.includes(key)) &&
-    needOneOptionalParam
-  ) {
-    errorArray.MAIN = [
-      `Missing one of the following parameters: ${optionalParams.join(', ')}`,
-    ];
-  }
-
-  for (let i = 0; i < requiredParams.length; i++) {
-    const key: string = requiredParams[i];
-    const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
-    if (!reqKeys.includes(key)) {
-      errorArray[key] = [`${errorKey} is missing and it's needed`];
+    const currentUser = req.user;
+    let user, post;
+    try {
+      user = await User.findById(req.params.username);
+    } catch (err) {
+      throw new ErrorAO({ MAIN: ['Invalid username'] }, 'ParameterError', 403);
     }
-    if (req.route.path === '') {
-      if (key === 'newPassword') {
-        for (let j = 0; j < req.user.formerPasswords.length; j++) {
-          const keyPass = req.user.formerPasswords[j];
-          if (await bcrypt.compare(req.body[key], keyPass)) {
-            errorArray.password = ['Password was formally used, use another.'];
-          }
+    try {
+      post = await Post.findById(req.params.id);
+      if (reqKeys.includes('mainPost')) {
+        await Post.findById(req.params.id);
+      }
+      if (reqKeys.includes('mentionedParents')) {
+        for (let i = 0; i < req.body.mentionedParents.length; i++) {
+          await Post.findById(req.body.mentionedParents[i]);
         }
       }
-      if (req.user[key] === req.body[key]) {
-        errorArray[key] = [`${errorKey} is being currently used, try another.`];
-      }
+    } catch (err) {
+      throw new ErrorAO({ MAIN: ['Invalid post id'] }, 'ParameterError', 403);
     }
-  }
-  if (Object.keys(errorArray).length) {
-    throw new ErrorAO(errorArray, 'ParameterError');
-  }
 
-  next();
-};
+    // First case, check for permissions
+    if (isUserRequest && req.params.username) {
+      if (!user)
+        throw new ErrorAO(
+          {
+            MAIN: [`There's no user with the username: ${req.params.username}`],
+          },
+          'ParameterError',
+          404
+        );
+      if (!user._id.equals(currentUser._id))
+        throw new ErrorAO(
+          { MAIN: ['You are not allowed to change/delete this user'] },
+          'ParameterError',
+          403
+        );
+    }
+    if (isPostRequest && req.params.id) {
+      if (!post)
+        throw new ErrorAO(
+          { MAIN: [`No post by that ID: ${req.params.id}`] },
+          'ParameterError',
+          404
+        );
+      if (!post.user._id.equals(currentUser._id))
+        throw new ErrorAO(
+          { MAIN: ['You are not allowed to change/delete this post'] },
+          'ParameterError',
+          403
+        );
+    }
 
-export const fileChecker = async (
-  req: any,
-  allowedTypes: any,
-  post: any = null
-) => {
-  const mediaType = Object.keys(req.files)[0];
-  const files = req.files[mediaType];
-
-  if (Object.keys(req.files).length > 1) {
-    throw new ErrorAO(
-      {
-        MAIN: ['You can not send multiple types in the same post'],
-      },
-      'ParameterError'
-    );
-  }
-
-  if (
-    allowedTypes.every((key) => !mediaType.includes(key)) ||
-    (post.mediaType !== mediaType &&
-      files.length - req.body?.filesToRemove.length !== 0)
-  ) {
-    throw new ErrorAO(
-      {
-        MAIN: [
-          'Either upload a set of images, a set of files or a single video',
-        ],
-      },
-      'ParameterError'
-    );
-  }
-
-  for (let i = 0; i < files.length; i++) {
-    const meta = await fileTypeFromFile(files[i].path);
-    if (!meta || !whiteListedFileTypes[mediaType].includes(meta.ext)) {
+    // Second case, check if there are unwanted parameters
+    if (
+      !reqKeys.every((key: string) => {
+        return requiredParams.includes(key) || optionalParams.includes(key);
+      })
+    ) {
       throw new ErrorAO(
-        {
-          MAIN: [
-            `The only formats allowed are: ${whiteListedFileTypes[
-              mediaType
-            ].join(', ')}`,
-          ],
-        },
+        { MAIN: ['Invalid request, got invalid parameters'] },
         'ParameterError'
       );
     }
+
+    // Third case, check if there are missing parameters from the request
+    if (!reqKeys.length && !parameterFreeRequest) {
+      throw new ErrorAO({ MAIN: ['Missing parameters'] }, 'ParameterError');
+    }
+    if (
+      optionalParams.length &&
+      optionalParams.every((key) => !reqKeys.includes(key)) &&
+      isPatchMethod
+    ) {
+      errorArray.MAIN = [
+        `Missing one of the following parameters: ${optionalParams.join(', ')}`,
+      ];
+    }
+    for (let i = 0; i < requiredParams.length; i++) {
+      const key: string = requiredParams[i];
+      const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
+      if (!reqKeys.includes(key)) {
+        errorArray[key] = [`${errorKey} is missing and it's needed`];
+      }
+    }
+
+    if (
+      (dupeFlag =
+        req.files && isPostRequest && Object.keys(req.files).length > 1)
+    ) {
+      errorArray.media = [
+        'Either upload a set of images, a set of files or a single video',
+      ];
+    }
+
+    if (isPatchMethod) {
+      for (let i = 0; i < reqKeys.length; i++) {
+        const key: string = reqKeys[i];
+        const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
+
+        if (
+          key === 'filesToRemove' &&
+          isPostRequest &&
+          Object.keys(req.files).length
+        ) {
+          const filesToRemove = utils.filterDupes(
+            req.body.filesToRemove.slice()
+          );
+          const mediaType = Object.keys(req.files)[0];
+
+          if (
+            !dupeFlag &&
+            !post.media.every((file) => {
+              return filesToRemove.includes(file);
+            }) &&
+            mediaType !== post.mediaType
+          ) {
+            const errMsg = `You can't have multiple media types in the same post`;
+            errorArray.media = errorArray.media
+              ? errorArray.media.concat([errMsg])
+              : [errMsg];
+          }
+        }
+        if (key === 'newPassword') {
+          for (let j = 0; j < currentUser.formerPasswords.length; j++) {
+            const keyPass = currentUser.formerPasswords[j];
+            if (await bcrypt.compare(req.body[key], keyPass)) {
+              errorArray.password = [
+                'Password was formally used, use another.',
+              ];
+            }
+          }
+        }
+
+        if (
+          _.isEqual(currentUser[key], req.body[key]) ||
+          _.isEqual(post[key], req.body[key])
+        ) {
+          errorArray[key] = [
+            `${errorKey} has the same value as what's currently stored, try another.`,
+          ];
+        }
+      }
+    }
+
+    if (Object.keys(errorArray).length) {
+      throw new ErrorAO(errorArray, 'ParameterError');
+    }
+    next();
   }
-};
+);
 
 export default parameterChecker;

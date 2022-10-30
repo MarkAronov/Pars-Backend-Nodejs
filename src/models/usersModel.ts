@@ -1,16 +1,14 @@
 import mongoose from 'mongoose';
-
+import fs from 'fs';
+import path from 'path';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 import uniqueValidator from 'mongoose-unique-validator';
 
 import { Post } from './postsModel.js';
-import {
-  usernameChecker,
-  passwordChecker,
-  emailChecker,
-} from '../utils/utils.js';
+import * as utils from '../utils/utils.js';
+
 import ErrorAO from '../utils/ErrorAO.js';
 
 const schemaOptions: any = {
@@ -34,7 +32,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
       trim: true,
       async validate(value: string | undefined) {
         let usernameErrors: string[] = [];
-        usernameErrors = usernameChecker(value);
+        usernameErrors = utils.usernameChecker(value);
         if (usernameErrors.length !== 0)
           throw new ErrorAO(usernameErrors, 'Username error');
       },
@@ -54,7 +52,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
       trim: true,
       async validate(value: string | undefined) {
         let emailErrors = [];
-        emailErrors = emailChecker(value);
+        emailErrors = utils.emailChecker(value);
         if (emailErrors.length !== 0)
           throw new ErrorAO(emailErrors, 'Email error');
       },
@@ -65,7 +63,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
       maxLength: 254,
       async validate(value: string | undefined) {
         let passwordErrorsList = [];
-        passwordErrorsList = passwordChecker(value);
+        passwordErrorsList = utils.passwordChecker(value);
         if (passwordErrorsList.length !== 0)
           throw new ErrorAO(passwordErrorsList, 'Password error');
       },
@@ -187,6 +185,16 @@ UserSchema.pre('remove', async function preRemove(next) {
   for (const postID of user.posts) {
     const post = await Post.findById(postID);
     await post.remove();
+  }
+  const fileFolderPath = path.join(utils.dirName(), `../../media/`);
+  if (this.avatar) {
+    await fs.rm(`${fileFolderPath}/avatars/${user.avatar}`, () => {});
+  }
+  if (this.backgroundImage) {
+    await fs.rm(
+      `${fileFolderPath}/backgroundImages/${user.backgroundImage}`,
+      () => {}
+    );
   }
   next();
 });

@@ -10,6 +10,7 @@ const jsonParser = (req, res, next) => {
       delete req.body.content;
       req.body = Object.assign({}, req.body, reqJSONContent);
     } catch (err) {
+      console.log(err);
       throw new ErrorAO({ MAIN: ['invalid JSON string'] }, 'ParameterError');
     }
   }

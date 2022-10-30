@@ -1,8 +1,9 @@
 import jsonwebtoken from 'jsonwebtoken';
 import ErrorAO from '../utils/ErrorAO.js';
 import { User } from '../models/usersModel.js';
+import * as utils from '../utils/utils.js';
 
-const auth = async (req: any, res: any, next: () => void) => {
+const auth = utils.wrap(async (req: any, res: any, next: () => void) => {
   if (!req.header('Authorization')) {
     throw new ErrorAO(
       { MAIN: ['Authenticate method is invalid'] },
@@ -29,6 +30,6 @@ const auth = async (req: any, res: any, next: () => void) => {
   req.token = uncodedToken;
   req.user = user;
   next();
-};
+});
 
 export default auth;
