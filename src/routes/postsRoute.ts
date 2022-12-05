@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
-import mongoose from 'mongoose';
 
 import { Post } from '../models/postsModel.js';
 
@@ -40,7 +39,7 @@ router.post(
       );
 
       for (let i = 0; i < mentionedParents.length; i++) {
-        post.mentionedParents = []
+        post.mentionedParents = [];
         const parent = await Post.findById(mentionedParents[i]);
         if (parent) post.mentionedParents.push(parent._id);
       }
@@ -181,4 +180,5 @@ router.delete(
     return res.status(200).send();
   })
 );
+
 export default router;

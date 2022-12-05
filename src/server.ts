@@ -5,12 +5,9 @@
  */
 
 import app from './app.js';
-import debugImport from 'debug';
 import * as http from 'http';
+import * as socketio from 'socket.io';
 import { normalizePort } from './utils/utils.js';
-const debug = debugImport('backend-nodejs:server');
-
-
 
 /**
  * Get port from environment and store in Express.
@@ -22,13 +19,27 @@ app.set('port', port);
  * Create HTTP server.
  */
 
-const server = http.createServer(app);
+const server: http.Server = http.createServer(app);
+const io: socketio.Server = new socketio.Server();
+io.attach(server);
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
 
 /**
  * Event listener for HTTP server "error" event.
- * @param {object} error
  */
-const onError = (error: { syscall: string; code: any }) => {
+server.on('error', (error: { syscall: string; code: any }) => {
   if (error.syscall !== 'listen') {
     throw error;
   }
@@ -40,29 +51,19 @@ const onError = (error: { syscall: string; code: any }) => {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
       process.exit(1);
-      break;
     case 'EADDRINUSE':
       console.error(bind + ' is already in use');
       process.exit(1);
-      break;
     default:
       throw error;
   }
-};
+});
 
 /**
  * Event listener for HTTP server "listening" event.
  */
-const onListening = () => {
+server.on('listening', () => {
   const addr = server.address();
   const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr?.port;
-  debug('Listening on ' + bind);
-};
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+  console.log('Listening on ' + bind);
+});

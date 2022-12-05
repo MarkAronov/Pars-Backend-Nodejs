@@ -57,6 +57,8 @@ const PostSchema = new mongoose.Schema(
   schemaOptions
 );
 
+PostSchema.index({ title: 'text' });
+
 PostSchema.virtual('mainPostChildren', {
   ref: 'Post',
   localField: '_id',

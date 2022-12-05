@@ -4,3 +4,4 @@ s_key.mjs
 test.js
 node_modules
 /tests
+/config

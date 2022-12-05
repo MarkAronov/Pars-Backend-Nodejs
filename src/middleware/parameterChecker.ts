@@ -258,8 +258,8 @@ const parameterChecker = utils.wrap(
         }
 
         if (
-          _.isEqual(currentUser[key], req.body[key]) ||
-          _.isEqual(post[key], req.body[key])
+          (isUserRequest && _.isEqual(currentUser[key] ?? '', req.body[key])) ||
+          (isPostRequest && _.isEqual(post[key] ?? '', req.body[key]))
         ) {
           errorArray[key] = [
             `${errorKey} has the same value as what's currently stored, try another.`,

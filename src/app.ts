@@ -42,5 +42,4 @@ app.use(miscRouter);
 app.use(errorHandler);
 
 console.clear();
-console.log('Listening');
 export default app;

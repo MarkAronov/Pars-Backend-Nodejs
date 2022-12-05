@@ -13,7 +13,12 @@ const errorHandler = async (err, req, res, next) => {
     '/users/me',
     '/users',
   ];
-  console.log(err)
+  console.log(err, Object.keys(err));
+  if (req.route.path === '/media/:mediatype/:mediafile' && err.status === 404) {
+    return res.status(404).send({
+      media: `file does not exist`,
+    });
+  }
   if (
     urlsThatUploadFiles.includes(req.route.path) &&
     (req.method === 'POST' || req.method === 'PATCH')

@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import mongoosastic, {
+  MongoosasticDocument,
+  MongoosasticModel,
+} from 'mongoosastic';
 
 import uniqueValidator from 'mongoose-unique-validator';
 
@@ -36,12 +40,14 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         if (usernameErrors.length !== 0)
           throw new ErrorAO(usernameErrors, 'Username error');
       },
+      es_indexed: true,
     },
     displayName: {
       type: String,
       maxLength: [128, 'Display Name is longer than 128 characters.'],
       default: '',
       trim: true,
+      es_indexed: true,
     },
     email: {
       type: String,
@@ -106,6 +112,16 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
   },
   schemaOptions
 );
+
+UserSchema.plugin(mongoosastic, {
+  host: 'localhost',
+  port: 9200,
+  protocol: 'https',
+  auth: 'elastic:laFSVaYVYOygOfgcBC**',
+  //  ,curlDebug: true
+});
+
+// UserSchema.index({username: 'text', displayName: 'text',});
 
 UserSchema.virtual('posts', {
   ref: 'Post',
@@ -210,7 +226,7 @@ UserSchema.pre('save', async function preSave(next) {
   next();
 });
 
-export interface IUser extends mongoose.Document {
+export interface IUser extends mongoose.Document, MongoosasticDocument {
   username: string;
   displayName: string;
   email: string;
@@ -235,7 +251,7 @@ interface IUserDocument extends IUser {
   toLimitedJSON(limitLevevl: number): typeof User;
 }
 
-export interface IUserModel extends mongoose.Model<IUserDocument> {
+export interface IUserModel extends MongoosasticModel<IUserDocument> {
   verifyPassword(user: IUserModel, currentPassword: string);
   verifyCredentials(email: string, password: string): any;
 }
