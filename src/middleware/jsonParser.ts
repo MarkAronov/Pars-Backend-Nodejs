@@ -1,6 +1,7 @@
 import ErrorAO from '../utils/ErrorAO.js';
 
 const jsonParser = (req, res, next) => {
+  console.log(req.body);
   if (req.body && Object.keys(req.body).includes('content')) {
     try {
       const reqJSONContent =
@@ -10,7 +11,6 @@ const jsonParser = (req, res, next) => {
       delete req.body.content;
       req.body = Object.assign({}, req.body, reqJSONContent);
     } catch (err) {
-      console.log(err);
       throw new ErrorAO({ MAIN: ['invalid JSON string'] }, 'ParameterError');
     }
   }

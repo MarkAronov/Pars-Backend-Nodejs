@@ -6,7 +6,7 @@ const schemaOptions: any = {
     virtuals: true,
   },
   toObject: {
-    vituals: true,
+    virtuals: true,
   },
   timestamps: true,
   id: false,
@@ -19,6 +19,7 @@ const PostSchema = new mongoose.Schema(
       required: true,
       maxLength: 254,
       trim: true,
+      es_indexed: true,
     },
     content: {
       type: String,

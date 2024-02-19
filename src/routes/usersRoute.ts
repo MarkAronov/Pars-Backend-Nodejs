@@ -40,7 +40,7 @@ router.post(
         );
         const filename = req.files[mediaType[i]][0].filename;
         const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
-        await fs.rename(
+        fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
           () => {}
@@ -56,7 +56,7 @@ router.post(
     await createdUser.save();
 
     const user = createdUser.toLimitedJSON(2);
-    const token = await createdUser.generateToken();
+    const token = createdUser.generateToken();
 
     return res.status(201).send({ user, token });
   })
@@ -65,7 +65,11 @@ router.post(
 // POST request for logging the user in.
 router.post(
   '/users/login',
-  utils.wrap(async (req, res) => {
+  userMulter,
+  jsonParser,
+  parameterChecker,
+  utils.wrap(async (req: Request, res: Response) => {
+    console.log(req.body);
     const userToLimit = await User.verifyCredentials(
       req.body.email,
       req.body.password
@@ -81,6 +85,9 @@ router.post(
 router.post(
   '/users/logout',
   auth,
+  userMulter,
+  jsonParser,
+  parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
     req.user.tokens = req.user.tokens.filter((token: any) => {
       return token.token !== req.token;
@@ -93,7 +100,7 @@ router.post(
 
 // POST request for logging the user out from all sessions.
 router.post(
-  '/users/logoutall',
+  '/users/logout/all',
   auth,
   utils.wrap(async (req: any, res: Response) => {
     req.user.tokens = [];
@@ -104,15 +111,19 @@ router.post(
 );
 
 // GET request for list of all Users.
-router.get('/users', async (req, res) => {
-  const users = await User.find({});
-  return res.status(200).send(users);
-});
+// router.get('/users', async (req: Request, res: Response) => {
+//   const users = await User.find({});
+//   return res.status(200).send(users);
+// });
 
 // GET request for one User.
 router.get(
-  '/users/:username',
-  utils.wrap(async (req, res) => {
+  '/users/:username',  
+  auth,
+  userMulter,
+  jsonParser,
+  parameterChecker,
+  utils.wrap(async (req: Request, res: Response) => {
     const user = await User.findOne({ username: req.params.username });
     if (!user)
       throw new ErrorAO(
@@ -130,10 +141,11 @@ router.get(
   })
 );
 
-// PATCH request to update User.
+// PATCH requests to update User.
 router.patch(
   '/users/me/password',
   auth,
+  userMulter,
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
@@ -149,6 +161,7 @@ router.patch(
 router.patch(
   '/users/me/important',
   auth,
+  userMulter,
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
@@ -189,7 +202,7 @@ router.patch(
         );
         const filename = req.files[mediaType[i]][0].filename;
         const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
-        await fs.rename(
+        fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
           () => {}
@@ -199,7 +212,7 @@ router.patch(
           mediaType[i]
         ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
         if (req.user[mediaType[i]]) {
-          await fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
+          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
         }
         req.user[mediaType[i]] = `${filename}.${meta.ext}`;
       }
@@ -209,10 +222,23 @@ router.patch(
   })
 );
 
-// DELETE request to delete User.
+// DELETE requests to delete User or User objects.
+
 router.delete(
   '/users/me',
   auth,
+  utils.wrap(async (req: any, res: Response) => {
+    await req.user.remove();
+    return res.status(200).send();
+  })
+);
+
+router.delete(
+  '/users/me/partial',
+  auth,
+  userMulter,
+  jsonParser,
+  parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
     await req.user.remove();
     return res.status(200).send();

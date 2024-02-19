@@ -11,14 +11,14 @@ const auth = utils.wrap(async (req: any, res: any, next: () => void) => {
       401
     );
   }
-  const uncodedToken = req.header('Authorization').replace('Bearer ', '');
+  const encodedToken = req.header('Authorization').replace('Bearer ', '');
   const decodedToken: any = jsonwebtoken.verify(
-    uncodedToken,
+    encodedToken,
     process.env.JWT_STRING!
   );
   const user = await User.findOne({
     _id: decodedToken.id,
-    'tokens.token': uncodedToken,
+    'tokens.token': encodedToken,
   });
   if (!user) {
     throw new ErrorAO(
@@ -27,7 +27,7 @@ const auth = utils.wrap(async (req: any, res: any, next: () => void) => {
       401
     );
   }
-  req.token = uncodedToken;
+  req.token = encodedToken;
   req.user = user;
   next();
 });

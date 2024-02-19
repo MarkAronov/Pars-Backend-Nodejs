@@ -20,7 +20,7 @@ const schemaOptions: any = {
     virtuals: true,
   },
   toObject: {
-    vituals: true,
+    virtuals: true,
   },
   timestamps: true,
   id: false,
@@ -47,7 +47,6 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
       maxLength: [128, 'Display Name is longer than 128 characters.'],
       default: '',
       trim: true,
-      es_indexed: true,
     },
     email: {
       type: String,
@@ -112,16 +111,8 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
   },
   schemaOptions
 );
-
-UserSchema.plugin(mongoosastic, {
-  host: 'localhost',
-  port: 9200,
-  protocol: 'https',
-  auth: 'elastic:laFSVaYVYOygOfgcBC**',
-  //  ,curlDebug: true
-});
-
-// UserSchema.index({username: 'text', displayName: 'text',});
+UserSchema.plugin(mongoosastic);
+UserSchema.index({ username: 'text', displayName: 'text' });
 
 UserSchema.virtual('posts', {
   ref: 'Post',

@@ -39,7 +39,7 @@ const requestMap = {
     },
   },
   GET: {
-    '/users': { requiredParams: [], optionalParams: [] },
+    '/users': { requiredParams: ['requestedFields',], optionalParams: [] },
     '/users/:username': { requiredParams: [], optionalParams: [] },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
@@ -79,27 +79,31 @@ const requestMap = {
   },
   DELETE: {
     '/users/me': { requiredParams: [], optionalParams: [] },
+    '/users/me/partial': {
+      requiredParams: [],
+      optionalParams: ['bio', 'avatar', 'backgroundImage'],
+    },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
 };
 
-// const whiteListedFileTypes = {
-//   avatar: ['png', 'jpg', 'gif'],
-//   backgroundImage: ['png', 'jpg', 'gif'],
-//   images: ['png', 'jpg', 'gif'],
-//   videos: ['mp4', 'webm'],
-//   datafiles: ['pdf', 'zip'],
-// };
+const whiteListedFileTypes = {
+  avatar: ['png', 'jpg', 'gif'],
+  backgroundImage: ['png', 'jpg', 'gif'],
+  images: ['png', 'jpg', 'gif'],
+  videos: ['mp4', 'webm'],
+  datafiles: ['pdf', 'zip'],
+};
 
-// const allowedMediaTypes = {
-//   '/users': ['avatar', 'backgroundImage'],
-//   '/posts': ['images', 'videos', 'datafiles'],
-// };
+const allowedMediaTypes = {
+  '/users': ['avatar', 'backgroundImage'],
+  '/posts': ['images', 'videos', 'datafiles'],
+};
 
-// const mediaTypesErrorString = {
-//   '/users': 'Either upload an avatar or/and a background image',
-//   '/posts': 'Either upload a set of images, a set of files or a single video',
-// };
+const mediaTypesErrorString = {
+  '/users': 'Either upload an avatar or/and a background image',
+  '/posts': 'Either upload a set of images, a set of files or a single video',
+};
 
 const parameterChecker = utils.wrap(
   async (req: any, res: any, next: () => void) => {
@@ -114,7 +118,6 @@ const parameterChecker = utils.wrap(
     const parameterFreeRequest =
       !requiredParams.length && !optionalParams.length;
 
-    const isPatchMethod = req.method === 'PATCH';
     const isPostRequest = req.route.path.indexOf('/posts') >= 0;
     const isUserRequest = req.route.path.indexOf('/users') >= 0;
 
@@ -125,6 +128,8 @@ const parameterChecker = utils.wrap(
 
     const currentUser = req.user;
     let user, post;
+
+    // Precursor, check if user is valid 
     try {
       user = await User.findById(req.params.username);
     } catch (err) {
@@ -143,6 +148,7 @@ const parameterChecker = utils.wrap(
     } catch (err) {
       throw new ErrorAO({ MAIN: ['Invalid post id'] }, 'ParameterError', 403);
     }
+
 
     // First case, check for permissions
     if (isUserRequest && req.params.username) {
@@ -176,6 +182,7 @@ const parameterChecker = utils.wrap(
         );
     }
 
+
     // Second case, check if there are unwanted parameters
     if (
       !reqKeys.every((key: string) => {
@@ -188,14 +195,18 @@ const parameterChecker = utils.wrap(
       );
     }
 
+
     // Third case, check if there are missing parameters from the request
     if (!reqKeys.length && !parameterFreeRequest) {
-      throw new ErrorAO({ MAIN: ['Missing parameters'] }, 'ParameterError');
+      throw new ErrorAO(
+        { MAIN: [`Missing all needed or possible parameters`] },
+        'ParameterError'
+      );
     }
     if (
       optionalParams.length &&
       optionalParams.every((key) => !reqKeys.includes(key)) &&
-      isPatchMethod
+      req.method === 'PATCH'
     ) {
       errorArray.MAIN = [
         `Missing one of the following parameters: ${optionalParams.join(', ')}`,
@@ -209,6 +220,8 @@ const parameterChecker = utils.wrap(
       }
     }
 
+
+    // Fourth case, check if there are valid files from the request
     if (
       (dupeFlag =
         req.files && isPostRequest && Object.keys(req.files).length > 1)
@@ -218,7 +231,9 @@ const parameterChecker = utils.wrap(
       ];
     }
 
-    if (isPatchMethod) {
+
+    // Fifth case, check if the patch request ins't violating any rules
+    if (req.method === 'PATCH') {
       for (let i = 0; i < reqKeys.length; i++) {
         const key: string = reqKeys[i];
         const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
@@ -246,6 +261,7 @@ const parameterChecker = utils.wrap(
               : [errMsg];
           }
         }
+
         if (key === 'newPassword') {
           for (let j = 0; j < currentUser.formerPasswords.length; j++) {
             const keyPass = currentUser.formerPasswords[j];
@@ -267,6 +283,13 @@ const parameterChecker = utils.wrap(
         }
       }
     }
+
+
+    // Sixth case, check if GET request of user or post is valid
+    if(req.method === 'POST' || req.method === 'PATCH'){
+
+    }
+
 
     if (Object.keys(errorArray).length) {
       throw new ErrorAO(errorArray, 'ParameterError');

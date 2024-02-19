@@ -35,9 +35,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(dirName(), 'public')));
 
-app.use(usersRouter);
-app.use(postsRouter);
-app.use(miscRouter);
+app.use(usersRouter, postsRouter, miscRouter);
 
 app.use(errorHandler);
 

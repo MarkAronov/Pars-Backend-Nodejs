@@ -7,6 +7,7 @@
 import app from './app.js';
 import * as http from 'http';
 import * as socketio from 'socket.io';
+import IP from 'ip';
 import { normalizePort } from './utils/utils.js';
 
 /**
@@ -65,5 +66,5 @@ server.on('error', (error: { syscall: string; code: any }) => {
 server.on('listening', () => {
   const addr = server.address();
   const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr?.port;
-  console.log('Listening on ' + bind);
+  console.log('Listening on ' + bind + ' On IP ' + IP.address());
 });

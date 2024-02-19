@@ -90,7 +90,6 @@ router.get(
   utils.wrap(async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
     const fullPost = await post.toCustomJSON();
-    console.log(fullPost);
     return res.status(200).send(fullPost);
   })
 );
