@@ -243,6 +243,7 @@ interface IUserDocument extends IUser {
 }
 
 export interface IUserModel extends MongoosasticModel<IUserDocument> {
+  [x: string]: any;
   verifyPassword(user: IUserModel, currentPassword: string);
   verifyCredentials(email: string, password: string): any;
 }

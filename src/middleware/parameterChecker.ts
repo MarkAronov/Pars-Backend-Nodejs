@@ -1,6 +1,9 @@
 import ErrorAO from '../utils/ErrorAO.js';
+import { fileTypeFromFile } from 'file-type';
 import bcrypt from 'bcryptjs';
+import path from 'path';
 import _ from 'lodash';
+import fs from 'fs';
 
 import * as utils from '../utils/utils.js';
 // import { fileTypeFromFile } from 'file-type';
@@ -87,7 +90,7 @@ const requestMap = {
   },
 };
 
-const whiteListedFileTypes = {
+const allowedFileTypes = {
   avatar: ['png', 'jpg', 'gif'],
   backgroundImage: ['png', 'jpg', 'gif'],
   images: ['png', 'jpg', 'gif'],
@@ -95,10 +98,7 @@ const whiteListedFileTypes = {
   datafiles: ['pdf', 'zip'],
 };
 
-const allowedMediaTypes = {
-  '/users': ['avatar', 'backgroundImage'],
-  '/posts': ['images', 'videos', 'datafiles'],
-};
+const allowedMediaTypes = ['avatar', 'backgroundImage', 'images', 'videos', 'datafiles'];
 
 const mediaTypesErrorString = {
   '/users': 'Either upload an avatar or/and a background image',
@@ -283,12 +283,37 @@ const parameterChecker = utils.wrap(
         }
       }
     }
+    console.log(req.params)
 
+    // Sixth case, check if the files that were received are valid
+    if(req.method === 'POST' || req.method === 'PATCH' ){
+      if(Object.keys(req.files).length) {      
+        const mediaType = Object.keys(req.files)[0];
+        console.log
+          const fileFolderPath = path.join(
+            utils.dirName(),
+            `..\\..\\media\\${mediaType}`
+          );
 
-    // Sixth case, check if GET request of user or post is valid
-    if(req.method === 'POST' || req.method === 'PATCH'){
-
+          for (let i = 0; i < req.files[mediaType].length; i++) {
+            const meta = await fileTypeFromFile(req.files[mediaType][i].path);
+            if(!allowedFileTypes[mediaType].includes(meta)){    
+              for (let i = 0; i < req.files[mediaType].length; i++) {
+                const filename = req.files[mediaType][i].filename;
+                await fs.rm(
+                  `${fileFolderPath}\\${filename}`,
+                  () => {}
+                );
+              }
+              throw new ErrorAO(errorArray, 'ParameterError');
+            }
+          } 
+      }
+      else if (Object.keys(req.params).some(param => allowedMediaTypes.includes(param))){
+        throw new ErrorAO({"media": ["This parameter supposed to be a file type."]}, 'ParameterError');
+      }
     }
+    console.log("dwdwd")
 
 
     if (Object.keys(errorArray).length) {
