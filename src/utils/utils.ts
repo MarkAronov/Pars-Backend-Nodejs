@@ -112,7 +112,7 @@ export const validationErrorComposer = (error: any) => {
   return errorArray;
 };
 
-export const multerErrorComposer = (err: any) => {
+export const multerErrorComposer = (err: any, req: any) => {
   const errorMessages = {
     LIMIT_PART_COUNT: 'Too many parts',
     LIMIT_FILE_SIZE: 'File too large',

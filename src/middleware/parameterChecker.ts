@@ -281,10 +281,6 @@ const parameterChecker = utils.wrap(
 
     // Sixth case, check if the files that were received are valid
     if(req.method === 'POST' || req.method === 'PATCH' ){
-      console.log(req.body)
-      console.log(Object.keys(req.body))
-      console.log(allowedMediaTypes)
-      console.log(allowedMediaTypes.includes(Object.keys(req.body)[1]))
       if (Object.keys(req.body).some(param => allowedMediaTypes.includes(param))){
         if (isUserRequest )errorArray.media = ['Either upload an avatar or/and a background image.'];
         if (isPostRequest )errorArray.media = ['Either upload a set of images, a set of files or a single video.'];
@@ -298,9 +294,10 @@ const parameterChecker = utils.wrap(
 
           for (let i = 0; i < req.files[mediaType].length; i++) {
             const meta = await fileTypeFromFile(req.files[mediaType][i].path);
-            if(!allowedFileTypes[mediaType].includes(meta)){    
-              for (let i = 0; i < req.files[mediaType].length; i++) {
-                const filename = req.files[mediaType][i].filename;
+            console.log(meta)
+            if(!allowedFileTypes[mediaType].includes(meta.ext)){    
+              for (let j = 0; j < req.files[mediaType].length; j++) {
+                const filename = req.files[mediaType][j].filename;
                 await fs.rm(
                   `${fileFolderPath}\\${filename}`,
                   () => {}
@@ -309,6 +306,7 @@ const parameterChecker = utils.wrap(
               errorArray.media = [
                 `${mediaType} must only have files with the following formats: ${allowedFileTypes[mediaType].join(', ')}.`,
               ];
+              break;
             }
           } 
       }

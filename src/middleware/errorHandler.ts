@@ -28,7 +28,7 @@ const errorHandler = async (err, req, res, next) => {
   if (err.name === 'ValidationError') {
     return res.status(400).send(utils.validationErrorComposer(err));
   } else if (err.name === 'MulterError') {
-    return res.status(400).send(utils.multerErrorComposer(err));
+    return res.status(400).send(utils.multerErrorComposer(err, req));
   } else if (preComposedErrors.includes(err.name)) {
     return res.status(err.status).send(err.errorAO);
   } else return res.status(500).send(err.toString());
