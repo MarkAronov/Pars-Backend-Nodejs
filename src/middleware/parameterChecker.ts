@@ -100,11 +100,6 @@ const allowedFileTypes = {
 
 const allowedMediaTypes = ['avatar', 'backgroundImage', 'images', 'videos', 'datafiles'];
 
-const mediaTypesErrorString = {
-  '/users': 'Either upload an avatar or/and a background image',
-  '/posts': 'Either upload a set of images, a set of files or a single video',
-};
-
 const parameterChecker = utils.wrap(
   async (req: any, res: any, next: () => void) => {
     let reqKeys = req.body ? Object.keys(req.body) : [];
@@ -283,13 +278,19 @@ const parameterChecker = utils.wrap(
         }
       }
     }
-    console.log(req.params)
 
     // Sixth case, check if the files that were received are valid
     if(req.method === 'POST' || req.method === 'PATCH' ){
+      console.log(req.body)
+      console.log(Object.keys(req.body))
+      console.log(allowedMediaTypes)
+      console.log(allowedMediaTypes.includes(Object.keys(req.body)[1]))
+      if (Object.keys(req.body).some(param => allowedMediaTypes.includes(param))){
+        if (isUserRequest )errorArray.media = ['Either upload an avatar or/and a background image.'];
+        if (isPostRequest )errorArray.media = ['Either upload a set of images, a set of files or a single video.'];
+      }
       if(Object.keys(req.files).length) {      
         const mediaType = Object.keys(req.files)[0];
-        console.log
           const fileFolderPath = path.join(
             utils.dirName(),
             `..\\..\\media\\${mediaType}`
@@ -305,16 +306,13 @@ const parameterChecker = utils.wrap(
                   () => {}
                 );
               }
-              throw new ErrorAO(errorArray, 'ParameterError');
+              errorArray.media = [
+                `${mediaType} must only have files with the following formats: ${allowedFileTypes[mediaType].join(', ')}.`,
+              ];
             }
           } 
       }
-      else if (Object.keys(req.params).some(param => allowedMediaTypes.includes(param))){
-        throw new ErrorAO({"media": ["This parameter supposed to be a file type."]}, 'ParameterError');
-      }
     }
-    console.log("dwdwd")
-
 
     if (Object.keys(errorArray).length) {
       throw new ErrorAO(errorArray, 'ParameterError');

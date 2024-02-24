@@ -48,32 +48,3 @@ export const postMulter = multer({
   { name: 'images', maxCount: 5 },
   { name: 'datafiles', maxCount: 3 },
 ]);
-
-// const multerTypes = {
-//   '/users': multer({
-//     limits: {
-//       fileSize: 10 * megabyte,
-//       files: 2,
-//     },
-//     storage: storage,
-//   }).fields([
-//     { name: 'avatar', maxCount: 1 },
-//     { name: 'backgroundImage', maxCount: 1 },
-//   ]),
-//   '/posts': multer({
-//     limits: {
-//       fileSize: 75 * megabyte,
-//       files: 5,
-//     },
-//     storage: storage,
-//   }).fields([
-//     { name: 'videos', maxCount: 1 },
-//     { name: 'images', maxCount: 5 },
-//     { name: 'datafiles', maxCount: 3 },
-//   ]),
-// };
-
-// export const preMulter = (req, res, next) => {
-//   const routeType = req.route.path.slice(0, 6);
-//   return [multerTypes[routeType]];
-// };
