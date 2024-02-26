@@ -42,7 +42,7 @@ const requestMap = {
     },
   },
   GET: {
-    '/users': { requiredParams: ['requestedFields',], optionalParams: [] },
+    '/users': { requiredParams: ['requestedFields'], optionalParams: [] },
     '/users/:username': { requiredParams: [], optionalParams: [] },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
@@ -125,25 +125,28 @@ const parameterChecker = utils.wrap(
     let user, post;
 
     // Precursor, check if user is valid 
-    try {
-      user = await User.findById(req.params.username);
-    } catch (err) {
-      throw new ErrorAO({ MAIN: ['Invalid username'] }, 'ParameterError', 403);
-    }
-    try {
-      post = await Post.findById(req.params.id);
-      if (reqKeys.includes('mainPost')) {
-        await Post.findById(req.params.id);
+    if (isUserRequest) {
+      try {
+        user = await User.findById(req.params.username);
+      } catch (err) {
+        throw new ErrorAO({ MAIN: ['Invalid username'] }, 'ParameterError', 403);
       }
-      if (reqKeys.includes('mentionedParents')) {
-        for (let i = 0; i < req.body.mentionedParents.length; i++) {
-          await Post.findById(req.body.mentionedParents[i]);
+    }
+    if (isPostRequest) {
+      try {
+        post = await Post.findById(req.params.id);
+        if (reqKeys.includes('mainPost')) {
+          await Post.findById(req.params.id);
         }
+        if (reqKeys.includes('mentionedParents')) {
+          for (let i = 0; i < req.body.mentionedParents.length; i++) {
+            await Post.findById(req.body.mentionedParents[i]);
+          }
+        }
+      } catch (err) {
+        throw new ErrorAO({ MAIN: ['Invalid post id'] }, 'ParameterError', 403);
       }
-    } catch (err) {
-      throw new ErrorAO({ MAIN: ['Invalid post id'] }, 'ParameterError', 403);
     }
-
 
     // First case, check for permissions
     if (isUserRequest && req.params.username) {
@@ -153,13 +156,13 @@ const parameterChecker = utils.wrap(
             MAIN: [`There's no user with the username: ${req.params.username}`],
           },
           'ParameterError',
-          404
+          404,
         );
       if (!user._id.equals(currentUser._id))
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this user'] },
           'ParameterError',
-          403
+          403,
         );
     }
     if (isPostRequest && req.params.id) {
@@ -167,26 +170,24 @@ const parameterChecker = utils.wrap(
         throw new ErrorAO(
           { MAIN: [`No post by that ID: ${req.params.id}`] },
           'ParameterError',
-          404
+          404,
         );
       if (!post.user._id.equals(currentUser._id))
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this post'] },
           'ParameterError',
-          403
+          403,
         );
     }
 
 
     // Second case, check if there are unwanted parameters
     if (
-      !reqKeys.every((key: string) => {
-        return requiredParams.includes(key) || optionalParams.includes(key);
-      })
+      !reqKeys.every((key: string) => requiredParams.includes(key) || optionalParams.includes(key))
     ) {
       throw new ErrorAO(
         { MAIN: ['Invalid request, got invalid parameters'] },
-        'ParameterError'
+        'ParameterError',
       );
     }
 
@@ -194,8 +195,8 @@ const parameterChecker = utils.wrap(
     // Third case, check if there are missing parameters from the request
     if (!reqKeys.length && !parameterFreeRequest) {
       throw new ErrorAO(
-        { MAIN: [`Missing all needed or possible parameters`] },
-        'ParameterError'
+        { MAIN: ['Missing all needed or possible parameters'] },
+        'ParameterError',
       );
     }
     if (
@@ -239,18 +240,16 @@ const parameterChecker = utils.wrap(
           Object.keys(req.files).length
         ) {
           const filesToRemove = utils.filterDupes(
-            req.body.filesToRemove.slice()
+            req.body.filesToRemove.slice(),
           );
           const mediaType = Object.keys(req.files)[0];
 
           if (
             !dupeFlag &&
-            !post.media.every((file) => {
-              return filesToRemove.includes(file);
-            }) &&
+            !post.media.every((file) => filesToRemove.includes(file)) &&
             mediaType !== post.mediaType
           ) {
-            const errMsg = `You can't have multiple media types in the same post`;
+            const errMsg = 'You can\'t have multiple media types in the same post';
             errorArray.media = errorArray.media
               ? errorArray.media.concat([errMsg])
               : [errMsg];
@@ -278,37 +277,37 @@ const parameterChecker = utils.wrap(
         }
       }
     }
-
+    console.log(req.body);
     // Sixth case, check if the files that were received are valid
-    if(req.method === 'POST' || req.method === 'PATCH' ){
-      if (Object.keys(req.body).some(param => allowedMediaTypes.includes(param))){
+    if (req.method === 'POST' || req.method === 'PATCH' ) {
+      if (Object.keys(req.body).some(param => allowedMediaTypes.includes(param))) {
         if (isUserRequest )errorArray.media = ['Either upload an avatar or/and a background image.'];
         if (isPostRequest )errorArray.media = ['Either upload a set of images, a set of files or a single video.'];
       }
-      if(Object.keys(req.files).length) {      
+      if (Object.keys(req.files).length) {      
         const mediaType = Object.keys(req.files)[0];
-          const fileFolderPath = path.join(
-            utils.dirName(),
-            `..\\..\\media\\${mediaType}`
-          );
+        const fileFolderPath = path.join(
+          utils.dirName(),
+          `..\\..\\media\\${mediaType}`,
+        );
 
-          for (let i = 0; i < req.files[mediaType].length; i++) {
-            const meta = await fileTypeFromFile(req.files[mediaType][i].path);
-            console.log(meta)
-            if(!allowedFileTypes[mediaType].includes(meta.ext)){    
-              for (let j = 0; j < req.files[mediaType].length; j++) {
-                const filename = req.files[mediaType][j].filename;
-                await fs.rm(
-                  `${fileFolderPath}\\${filename}`,
-                  () => {}
-                );
-              }
-              errorArray.media = [
-                `${mediaType} must only have files with the following formats: ${allowedFileTypes[mediaType].join(', ')}.`,
-              ];
-              break;
+        for (let i = 0; i < req.files[mediaType].length; i++) {
+          const meta = await fileTypeFromFile(req.files[mediaType][i].path);
+          console.log(meta);
+          if (!allowedFileTypes[mediaType].includes(meta.ext)) {    
+            for (let j = 0; j < req.files[mediaType].length; j++) {
+              const filename = req.files[mediaType][j].filename;
+              await fs.rm(
+                `${fileFolderPath}\\${filename}`,
+                () => {},
+              );
             }
-          } 
+            errorArray.media = [
+              `${mediaType} must only have files with the following formats: ${allowedFileTypes[mediaType].join(', ')}.`,
+            ];
+            break;
+          }
+        } 
       }
     }
 
@@ -316,7 +315,7 @@ const parameterChecker = utils.wrap(
       throw new ErrorAO(errorArray, 'ParameterError');
     }
     next();
-  }
+  },
 );
 
 export default parameterChecker;

@@ -109,7 +109,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
     },
     formerPasswords: [String],
   },
-  schemaOptions
+  schemaOptions,
 );
 UserSchema.plugin(mongoosastic);
 UserSchema.index({ username: 'text', displayName: 'text' });
@@ -155,7 +155,7 @@ UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevevl: number) {
 
 UserSchema.static(
   'verifyCredentials',
-  async function verifyCredentials(email: string, password: string) {
+  async (email: string, password: string) => {
     const user = await User.findOne({ email });
     if (!user) {
       throw new ErrorAO({ email: ['Invalid email.'] }, 'VerificationError');
@@ -165,25 +165,25 @@ UserSchema.static(
     if (!match) {
       throw new ErrorAO(
         { password: ['Incorrect password.'] },
-        'VerificationError'
+        'VerificationError',
       );
     }
     return user;
-  }
+  },
 );
 
 UserSchema.static(
   'verifyPassword',
-  async function verifyPassword(user: IUser, password: string) {
+  async (user: IUser, password: string) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       throw new ErrorAO(
         { password: ['Incorrect password.'] },
-        'VerificationError'
+        'VerificationError',
       );
     }
     return;
-  }
+  },
 );
 
 UserSchema.pre('remove', async function preRemove(next) {
@@ -193,14 +193,14 @@ UserSchema.pre('remove', async function preRemove(next) {
     const post = await Post.findById(postID);
     await post.remove();
   }
-  const fileFolderPath = path.join(utils.dirName(), `../../media/`);
+  const fileFolderPath = path.join(utils.dirName(), '../../media/');
   if (this.avatar) {
     await fs.rm(`${fileFolderPath}/avatars/${user.avatar}`, () => {});
   }
   if (this.backgroundImage) {
     await fs.rm(
       `${fileFolderPath}/backgroundImages/${user.backgroundImage}`,
-      () => {}
+      () => {},
     );
   }
   next();
@@ -229,8 +229,8 @@ export interface IUser extends mongoose.Document, MongoosasticDocument {
   avatar: string;
   backgroundImage: string;
   settings: {
-    hideWhenMade: Boolean;
-    hidePosts: Boolean;
+    hideWhenMade: boolean;
+    hidePosts: boolean;
   };
   formerPasswords: string[];
 }
@@ -251,5 +251,5 @@ export interface IUserModel extends MongoosasticModel<IUserDocument> {
 // Export model
 export const User: IUserModel = mongoose.model<IUserDocument, IUserModel>(
   'User',
-  UserSchema
+  UserSchema,
 );

@@ -36,14 +36,14 @@ router.post(
       for (let i = 0; i < mediaType.length; i++) {
         const fileFolderPath = path.join(
           utils.dirName(),
-          `../../media/${mediaType[i]}s`
+          `../../media/${mediaType[i]}s`,
         );
         const filename = req.files[mediaType[i]][0].filename;
         const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {}
+          () => {},
         );
 
         req.files[
@@ -59,7 +59,7 @@ router.post(
     const token = createdUser.generateToken();
 
     return res.status(201).send({ user, token });
-  })
+  }),
 );
 
 // POST request for logging the user in.
@@ -72,13 +72,13 @@ router.post(
     console.log(req.body);
     const userToLimit = await User.verifyCredentials(
       req.body.email,
-      req.body.password
+      req.body.password,
     );
 
     const token = await userToLimit.generateToken(userToLimit);
     const user = userToLimit.toLimitedJSON(userToLimit, 2);
     return res.status(200).send({ user, token });
-  })
+  }),
 );
 
 // POST request for logging the user out.
@@ -89,13 +89,11 @@ router.post(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
-    req.user.tokens = req.user.tokens.filter((token: any) => {
-      return token.token !== req.token;
-    });
+    req.user.tokens = req.user.tokens.filter((token: any) => token.token !== req.token);
 
     await req.user.save();
     return res.status(200).send();
-  })
+  }),
 );
 
 // POST request for logging the user out from all sessions.
@@ -107,7 +105,7 @@ router.post(
 
     await req.user.save();
     return res.status(200).send();
-  })
+  }),
 );
 
 // GET request for list of all Users.
@@ -130,7 +128,7 @@ router.get(
         {
           MAIN: [`No user with that name: ${req.params.username}`],
         },
-        'VerificationError'
+        'VerificationError',
       );
 
     if (!user.settings.hidePosts) {
@@ -138,7 +136,7 @@ router.get(
     }
 
     return res.status(200).send(user.toLimitedJSON(2));
-  })
+  }),
 );
 
 // PATCH requests to update User.
@@ -155,7 +153,7 @@ router.patch(
 
     await req.user.save();
     return res.status(200).send();
-  })
+  }),
 );
 
 router.patch(
@@ -179,7 +177,7 @@ router.patch(
       full: req.user.toLimitedJSON(req.user, 0),
       auth: req.user.toLimitedJSON(req.user, 2),
     });
-  })
+  }),
 );
 
 router.patch(
@@ -198,14 +196,14 @@ router.patch(
       for (let i = 0; i < mediaType.length; i++) {
         const fileFolderPath = path.join(
           utils.dirName(),
-          `../../media/${mediaType[i]}s`
+          `../../media/${mediaType[i]}s`,
         );
         const filename = req.files[mediaType[i]][0].filename;
         const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {}
+          () => {},
         );
 
         req.files[
@@ -219,7 +217,7 @@ router.patch(
     }
     await req.user.save();
     return res.status(200).send(req.user.toLimitedJSON(req.user, 2));
-  })
+  }),
 );
 
 // DELETE requests to delete User or User objects.
@@ -230,7 +228,7 @@ router.delete(
   utils.wrap(async (req: any, res: Response) => {
     await req.user.remove();
     return res.status(200).send();
-  })
+  }),
 );
 
 router.delete(
@@ -242,7 +240,7 @@ router.delete(
   utils.wrap(async (req: any, res: Response) => {
     await req.user.remove();
     return res.status(200).send();
-  })
+  }),
 );
 
 export default router;

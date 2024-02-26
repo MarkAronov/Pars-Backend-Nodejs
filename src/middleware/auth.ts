@@ -8,13 +8,13 @@ const auth = utils.wrap(async (req: any, res: any, next: () => void) => {
     throw new ErrorAO(
       { MAIN: ['Authenticate method is invalid'] },
       'AuthenticationError',
-      401
+      401,
     );
   }
   const encodedToken = req.header('Authorization').replace('Bearer ', '');
   const decodedToken: any = jsonwebtoken.verify(
     encodedToken,
-    process.env.JWT_STRING!
+    process.env.JWT_STRING!,
   );
   const user = await User.findOne({
     _id: decodedToken.id,
@@ -24,7 +24,7 @@ const auth = utils.wrap(async (req: any, res: any, next: () => void) => {
     throw new ErrorAO(
       { MAIN: ['Authenticate first'] },
       'AuthenticationError',
-      401
+      401,
     );
   }
   req.token = encodedToken;

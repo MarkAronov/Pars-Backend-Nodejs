@@ -16,7 +16,7 @@ const errorHandler = async (err, req, res, next) => {
   console.log(err);
   if (req.route.path === '/media/:mediatype/:mediafile' && err.status === 404) {
     return res.status(404).send({
-      media: `file does not exist`,
+      media: 'file does not exist',
     });
   }
   if (

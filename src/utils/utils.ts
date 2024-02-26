@@ -6,9 +6,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 // FUNCTIONS
 
-export const dirName = () => {
-  return dirname(fileURLToPath(import.meta.url));
-};
+export const dirName = () => dirname(fileURLToPath(import.meta.url));
 
 /**
  * Normalize a port into a number, string, or false.
@@ -41,7 +39,7 @@ export const filterDupes = (arr: string[] = []) => {
   return filtered;
 };
 
-export const usernameChecker = (str: string = ''): string[] => {
+export const usernameChecker = (str = ''): string[] => {
   const nameErrors = [];
 
   if (validator.contains(str, ' '))
@@ -51,14 +49,14 @@ export const usernameChecker = (str: string = ''): string[] => {
   return nameErrors;
 };
 
-export const emailChecker = (str: string = ''): string[] => {
+export const emailChecker = (str = ''): string[] => {
   const emailErrors = [];
 
   if (!validator.isEmail(str)) emailErrors.push('Invalid email');
   return emailErrors;
 };
 
-export const passwordChecker = (str: string = ''): string[] => {
+export const passwordChecker = (str = ''): string[] => {
   const passwordErrors = [];
   const lowercase = str.match(/[a-z]/);
   const uppercase = str.match(/[A-Z]/);
@@ -139,5 +137,5 @@ export const removeFiles = async (req: Request) => {
 
 export const wrap =
   (fn: any) =>
-  (...args: any) =>
-    fn(...args).catch(args[2]);
+    (...args: any) =>
+      fn(...args).catch(args[2]);

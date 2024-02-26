@@ -55,7 +55,7 @@ const PostSchema = new mongoose.Schema(
       default: false,
     },
   },
-  schemaOptions
+  schemaOptions,
 );
 
 PostSchema.index({ title: 'text' });
@@ -106,7 +106,7 @@ PostSchema.pre('remove', async function preRemove(next: () => void) {
       if (formerChild) {
         formerChild.mentionedParents.splice(
           formerChild.mentionedParents.indexOf(post._id),
-          1
+          1,
         );
         await formerChild.save();
       }
@@ -136,5 +136,5 @@ export interface IPostModel extends mongoose.Model<IPostDocument> {}
 // Export model
 export const Post: IPostModel = mongoose.model<IPostDocument, IPostModel>(
   'Post',
-  PostSchema
+  PostSchema,
 );
