@@ -150,7 +150,6 @@ const parameterChecker = utils.wrap(
       try {
         user = await User.findOne({ username: req.params.username });
       } catch (err) {
-        console.log(err);
         throw new ErrorAO(
           { MAIN: ['Invalid username'] },
           'ParameterError',
@@ -218,6 +217,17 @@ const parameterChecker = utils.wrap(
         'ParameterError',
       );
     }
+    if (
+      req.method === 'GET' &&
+      isUserRequest &&
+      req.body.requestedFields &&
+      !req.body.requestedFields.every((key: string) => userFields.includes(key))
+    ) {
+      throw new ErrorAO(
+        { MAIN: ['Invalid request, got invalid parameters'] },
+        'ParameterError',
+      );
+    }
 
     // Third case, check if there are missing parameters from the request
     if (!reqKeys.length && !parameterFreeRequest) {
@@ -227,12 +237,6 @@ const parameterChecker = utils.wrap(
             `Missing all required parameters${
               requiredParams.length
                 ? ' (' + requiredParams.join(', ') + ')'
-                : ''
-            }${
-              optionalParams.length
-                ? ' and one of the optional parameters (' +
-                  optionalParams.join(', ') +
-                  ')'
                 : ''
             }.`,
           ],
@@ -319,7 +323,7 @@ const parameterChecker = utils.wrap(
         }
       }
     }
-    console.log(req.body);
+
     // Sixth case, check if the files that were received are valid
     if (req.method === 'POST' || req.method === 'PATCH') {
       if (

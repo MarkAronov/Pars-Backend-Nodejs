@@ -69,7 +69,6 @@ router.post(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    console.log(req.body);
     const userToLimit = await User.verifyCredentials(
       req.body.email,
       req.body.password,
@@ -134,8 +133,15 @@ router.get(
   jsonParser,
   parameterChecker,
   async (req: Request, res: Response) => {
-    const users = await User.find({});
-    return res.status(200).send(users);
+    const trimmedUser = {};
+    Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
+      console.log(key);
+      if (req.body.requestedFields.includes(key)) {
+        trimmedUser[key] = req.user[key];
+        console.log(req.user[key]);
+      }
+    });
+    return res.status(200).send(trimmedUser);
   },
 );
 
