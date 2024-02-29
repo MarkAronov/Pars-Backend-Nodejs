@@ -5,7 +5,6 @@ module.exports = {
     },
     extends: [
       'prettier',
-      'airbnb-typescript',
       'plugin:@typescript-eslint/recommended',
     ],
     overrides: [
@@ -15,7 +14,7 @@ module.exports = {
           node: true,
         },
         parserOptions: {
-          ecmaVersion: 2015,
+          ecmaVersion: 2021,
           sourceType: 'module',
         },
       },
@@ -25,7 +24,7 @@ module.exports = {
       project: './tsconfig.json',
   },
   ignorePatterns: ["**/*.cjs"], // Exclude .cjs files from ESLint
-  plugins: ['@typescript-eslint'],
+  plugins: ['prettier'],
   rules: {
       'new-cap': 'off',
       'prettier/prettier': 'error',

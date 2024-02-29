@@ -172,19 +172,16 @@ UserSchema.static(
   },
 );
 
-UserSchema.static(
-  'verifyPassword',
-  async (user: IUser, password: string) => {
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      throw new ErrorAO(
-        { password: ['Incorrect password.'] },
-        'VerificationError',
-      );
-    }
-    return;
-  },
-);
+UserSchema.static('verifyPassword', async (user: IUser, password: string) => {
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) {
+    throw new ErrorAO(
+      { password: ['Incorrect password.'] },
+      'VerificationError',
+    );
+  }
+  return;
+});
 
 UserSchema.pre('remove', async function preRemove(next) {
   const user: any = this;

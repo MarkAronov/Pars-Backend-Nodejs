@@ -89,7 +89,9 @@ router.post(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: any, res: Response) => {
-    req.user.tokens = req.user.tokens.filter((token: any) => token.token !== req.token);
+    req.user.tokens = req.user.tokens.filter(
+      (token: any) => token.token !== req.token,
+    );
 
     await req.user.save();
     return res.status(200).send();
@@ -108,15 +110,38 @@ router.post(
   }),
 );
 
+// // GET request for list of all Users.
+// router.get(
+//   '/users',
+//   auth,
+//   userMulter,
+//   jsonParser,
+//   parameterChecker,
+//   async (req: Request, res: Response) => {
+//     const users = await User.find({});
+//     users.forEach((user) => {
+//       user.toLimitedJSON(2);
+//     });
+//     return res.status(200).send(users);
+//   },
+// );
+
 // GET request for list of all Users.
-// router.get('/users', async (req: Request, res: Response) => {
-//   const users = await User.find({});
-//   return res.status(200).send(users);
-// });
+router.get(
+  '/users/self',
+  auth,
+  userMulter,
+  jsonParser,
+  parameterChecker,
+  async (req: Request, res: Response) => {
+    const users = await User.find({});
+    return res.status(200).send(users);
+  },
+);
 
 // GET request for one User.
 router.get(
-  '/users/:username',  
+  '/users/u/:username',
   auth,
   userMulter,
   jsonParser,
@@ -141,7 +166,7 @@ router.get(
 
 // PATCH requests to update User.
 router.patch(
-  '/users/me/password',
+  '/users/self/password',
   auth,
   userMulter,
   jsonParser,
@@ -157,7 +182,7 @@ router.patch(
 );
 
 router.patch(
-  '/users/me/important',
+  '/users/self/important',
   auth,
   userMulter,
   jsonParser,
@@ -181,7 +206,7 @@ router.patch(
 );
 
 router.patch(
-  '/users/me/regular',
+  '/users/self/regular',
   auth,
   userMulter,
   jsonParser,
@@ -223,7 +248,7 @@ router.patch(
 // DELETE requests to delete User or User objects.
 
 router.delete(
-  '/users/me',
+  '/users/self',
   auth,
   utils.wrap(async (req: any, res: Response) => {
     await req.user.remove();
@@ -232,7 +257,7 @@ router.delete(
 );
 
 router.delete(
-  '/users/me/partial',
+  '/users/self/partial',
   auth,
   userMulter,
   jsonParser,

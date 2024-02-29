@@ -43,19 +43,23 @@ const requestMap = {
   },
   GET: {
     '/users': { requiredParams: ['requestedFields'], optionalParams: [] },
-    '/users/:username': { requiredParams: [], optionalParams: [] },
+    '/users/self': { requiredParams: ['requestedFields'], optionalParams: [] },
+    '/users/u/:username': {
+      requiredParams: ['requestedFields'],
+      optionalParams: [],
+    },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
   PATCH: {
-    '/users/me/password': {
+    '/users/self/password': {
       requiredParams: ['currentPassword', 'newPassword'],
       optionalParams: [],
     },
-    '/users/me/important': {
+    '/users/self/important': {
       requiredParams: ['password'],
       optionalParams: ['email', 'username'],
     },
-    '/users/me/regular': {
+    '/users/self/regular': {
       requiredParams: [],
       optionalParams: [
         'displayName',
@@ -90,6 +94,17 @@ const requestMap = {
   },
 };
 
+const userFields = [
+  'email',
+  'username',
+  'displayName',
+  'bio',
+  'hideWhenMade',
+  'hidePosts',
+  'avatar',
+  'backgroundImage',
+];
+
 const allowedFileTypes = {
   avatar: ['png', 'jpg', 'gif'],
   backgroundImage: ['png', 'jpg', 'gif'],
@@ -98,7 +113,13 @@ const allowedFileTypes = {
   datafiles: ['pdf', 'zip'],
 };
 
-const allowedMediaTypes = ['avatar', 'backgroundImage', 'images', 'videos', 'datafiles'];
+const allowedMediaTypes = [
+  'avatar',
+  'backgroundImage',
+  'images',
+  'videos',
+  'datafiles',
+];
 
 const parameterChecker = utils.wrap(
   async (req: any, res: any, next: () => void) => {
@@ -124,12 +145,17 @@ const parameterChecker = utils.wrap(
     const currentUser = req.user;
     let user, post;
 
-    // Precursor, check if user is valid 
+    // Precursor, check if user is valid
     if (isUserRequest) {
       try {
-        user = await User.findById(req.params.username);
+        user = await User.findOne({ username: req.params.username });
       } catch (err) {
-        throw new ErrorAO({ MAIN: ['Invalid username'] }, 'ParameterError', 403);
+        console.log(err);
+        throw new ErrorAO(
+          { MAIN: ['Invalid username'] },
+          'ParameterError',
+          403,
+        );
       }
     }
     if (isPostRequest) {
@@ -180,10 +206,12 @@ const parameterChecker = utils.wrap(
         );
     }
 
-
     // Second case, check if there are unwanted parameters
     if (
-      !reqKeys.every((key: string) => requiredParams.includes(key) || optionalParams.includes(key))
+      !reqKeys.every(
+        (key: string) =>
+          requiredParams.includes(key) || optionalParams.includes(key),
+      )
     ) {
       throw new ErrorAO(
         { MAIN: ['Invalid request, got invalid parameters'] },
@@ -191,11 +219,24 @@ const parameterChecker = utils.wrap(
       );
     }
 
-
     // Third case, check if there are missing parameters from the request
     if (!reqKeys.length && !parameterFreeRequest) {
       throw new ErrorAO(
-        { MAIN: ['Missing all needed or possible parameters'] },
+        {
+          MAIN: [
+            `Missing all required parameters${
+              requiredParams.length
+                ? ' (' + requiredParams.join(', ') + ')'
+                : ''
+            }${
+              optionalParams.length
+                ? ' and one of the optional parameters (' +
+                  optionalParams.join(', ') +
+                  ')'
+                : ''
+            }.`,
+          ],
+        },
         'ParameterError',
       );
     }
@@ -205,7 +246,9 @@ const parameterChecker = utils.wrap(
       req.method === 'PATCH'
     ) {
       errorArray.MAIN = [
-        `Missing one of the following parameters: ${optionalParams.join(', ')}`,
+        `Missing one of the following optional parameters: ${optionalParams.join(
+          ', ',
+        )}`,
       ];
     }
     for (let i = 0; i < requiredParams.length; i++) {
@@ -216,7 +259,6 @@ const parameterChecker = utils.wrap(
       }
     }
 
-
     // Fourth case, check if there are valid files from the request
     if (
       (dupeFlag =
@@ -226,7 +268,6 @@ const parameterChecker = utils.wrap(
         'Either upload a set of images, a set of files or a single video',
       ];
     }
-
 
     // Fifth case, check if the patch request ins't violating any rules
     if (req.method === 'PATCH') {
@@ -249,7 +290,8 @@ const parameterChecker = utils.wrap(
             !post.media.every((file) => filesToRemove.includes(file)) &&
             mediaType !== post.mediaType
           ) {
-            const errMsg = 'You can\'t have multiple media types in the same post';
+            const errMsg =
+              "You can't have multiple media types in the same post";
             errorArray.media = errorArray.media
               ? errorArray.media.concat([errMsg])
               : [errMsg];
@@ -279,12 +321,20 @@ const parameterChecker = utils.wrap(
     }
     console.log(req.body);
     // Sixth case, check if the files that were received are valid
-    if (req.method === 'POST' || req.method === 'PATCH' ) {
-      if (Object.keys(req.body).some(param => allowedMediaTypes.includes(param))) {
-        if (isUserRequest )errorArray.media = ['Either upload an avatar or/and a background image.'];
-        if (isPostRequest )errorArray.media = ['Either upload a set of images, a set of files or a single video.'];
+    if (req.method === 'POST' || req.method === 'PATCH') {
+      if (
+        Object.keys(req.body).some((param) => allowedMediaTypes.includes(param))
+      ) {
+        if (isUserRequest)
+          errorArray.media = [
+            'Either upload an avatar or/and a background image.',
+          ];
+        if (isPostRequest)
+          errorArray.media = [
+            'Either upload a set of images, a set of files or a single video.',
+          ];
       }
-      if (Object.keys(req.files).length) {      
+      if (Object.keys(req.files).length) {
         const mediaType = Object.keys(req.files)[0];
         const fileFolderPath = path.join(
           utils.dirName(),
@@ -294,20 +344,19 @@ const parameterChecker = utils.wrap(
         for (let i = 0; i < req.files[mediaType].length; i++) {
           const meta = await fileTypeFromFile(req.files[mediaType][i].path);
           console.log(meta);
-          if (!allowedFileTypes[mediaType].includes(meta.ext)) {    
+          if (!allowedFileTypes[mediaType].includes(meta.ext)) {
             for (let j = 0; j < req.files[mediaType].length; j++) {
               const filename = req.files[mediaType][j].filename;
-              await fs.rm(
-                `${fileFolderPath}\\${filename}`,
-                () => {},
-              );
+              await fs.rm(`${fileFolderPath}\\${filename}`, () => {});
             }
             errorArray.media = [
-              `${mediaType} must only have files with the following formats: ${allowedFileTypes[mediaType].join(', ')}.`,
+              `${mediaType} must only have files with the following formats: ${allowedFileTypes[
+                mediaType
+              ].join(', ')}.`,
             ];
             break;
           }
-        } 
+        }
       }
     }
 
