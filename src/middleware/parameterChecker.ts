@@ -9,6 +9,8 @@ import * as utils from '../utils/utils.js';
 // import { fileTypeFromFile } from 'file-type';
 import { Post } from '../models/postsModel.js';
 import { User } from '../models/usersModel.js';
+import { Request } from 'src/utils/types.js';
+import { Response } from 'express';
 
 const requestMap = {
   POST: {
@@ -42,12 +44,13 @@ const requestMap = {
     },
   },
   GET: {
-    '/users': { requiredParams: ['requestedFields'], optionalParams: [] },
-    '/users/self': { requiredParams: ['requestedFields'], optionalParams: [] },
+    '/users': { requiredParams: [], optionalParams: ['requestedFields'] },
+    '/users/self': { requiredParams: [], optionalParams: ['requestedFields'] },
     '/users/u/:username': {
-      requiredParams: ['requestedFields'],
-      optionalParams: [],
+      requiredParams: [],
+      optionalParams: ['requestedFields'],
     },
+    '/posts': { requiredParams: [], optionalParams: [] },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
   PATCH: {
@@ -122,7 +125,7 @@ const allowedMediaTypes = [
 ];
 
 const parameterChecker = utils.wrap(
-  async (req: any, res: any, next: () => void) => {
+  async (req: Request, res: Response, next: () => void) => {
     let reqKeys = req.body ? Object.keys(req.body) : [];
     reqKeys = req.files ? reqKeys.concat(Object.keys(req.files)) : reqKeys;
 
@@ -132,7 +135,8 @@ const parameterChecker = utils.wrap(
       requestMap[req.method][req.route.path]?.optionalParams;
 
     const parameterFreeRequest =
-      !requiredParams.length && !optionalParams.length;
+      (!requiredParams.length && !optionalParams.length) ||
+      req.method === 'GET';
 
     const isPostRequest = req.route.path.indexOf('/posts') >= 0;
     const isUserRequest = req.route.path.indexOf('/users') >= 0;
@@ -151,7 +155,7 @@ const parameterChecker = utils.wrap(
         user = await User.findOne({ username: req.params.username });
       } catch (err) {
         throw new ErrorAO(
-          { MAIN: ['Invalid username'] },
+          { MAIN: ['Invalid Username'] },
           'ParameterError',
           403,
         );
@@ -160,16 +164,8 @@ const parameterChecker = utils.wrap(
     if (isPostRequest) {
       try {
         post = await Post.findById(req.params.id);
-        if (reqKeys.includes('mainPost')) {
-          await Post.findById(req.params.id);
-        }
-        if (reqKeys.includes('mentionedParents')) {
-          for (let i = 0; i < req.body.mentionedParents.length; i++) {
-            await Post.findById(req.body.mentionedParents[i]);
-          }
-        }
       } catch (err) {
-        throw new ErrorAO({ MAIN: ['Invalid post id'] }, 'ParameterError', 403);
+        throw new ErrorAO({ MAIN: ['Invalid Post ID'] }, 'ParameterError', 403);
       }
     }
 
@@ -183,7 +179,7 @@ const parameterChecker = utils.wrap(
           'ParameterError',
           404,
         );
-      if (!user._id.equals(currentUser._id))
+      if (!user._id.equals(currentUser._id) && req.method !== 'GET')
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this user'] },
           'ParameterError',
@@ -197,7 +193,7 @@ const parameterChecker = utils.wrap(
           'ParameterError',
           404,
         );
-      if (!post.user._id.equals(currentUser._id))
+      if (!post.user._id.equals(currentUser._id) && req.method !== 'GET')
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this post'] },
           'ParameterError',
@@ -210,18 +206,12 @@ const parameterChecker = utils.wrap(
       !reqKeys.every(
         (key: string) =>
           requiredParams.includes(key) || optionalParams.includes(key),
-      )
-    ) {
-      throw new ErrorAO(
-        { MAIN: ['Invalid request, got invalid parameters'] },
-        'ParameterError',
-      );
-    }
-    if (
-      req.method === 'GET' &&
-      isUserRequest &&
-      req.body.requestedFields &&
-      !req.body.requestedFields.every((key: string) => userFields.includes(key))
+      ) ||
+      (req.method === 'GET' &&
+        req.body.requestedFields &&
+        !req.body.requestedFields.every((key: string) =>
+          userFields.includes(key),
+        ))
     ) {
       throw new ErrorAO(
         { MAIN: ['Invalid request, got invalid parameters'] },
@@ -351,7 +341,9 @@ const parameterChecker = utils.wrap(
           if (!allowedFileTypes[mediaType].includes(meta.ext)) {
             for (let j = 0; j < req.files[mediaType].length; j++) {
               const filename = req.files[mediaType][j].filename;
-              await fs.rm(`${fileFolderPath}\\${filename}`, () => {});
+              await fs.rm(`${fileFolderPath}\\${filename}`, (err) => {
+                throw err;
+              });
             }
             errorArray.media = [
               `${mediaType} must only have files with the following formats: ${allowedFileTypes[

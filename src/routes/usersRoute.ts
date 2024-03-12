@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
@@ -12,6 +12,7 @@ import parameterChecker from '../middleware/parameterChecker.js';
 
 import ErrorAO from '../utils/ErrorAO.js';
 import * as utils from '../utils/utils.js';
+import { Request } from 'src/utils/types.js';
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.post(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     req.user.tokens = req.user.tokens.filter(
       (token: any) => token.token !== req.token,
     );
@@ -101,7 +102,7 @@ router.post(
 router.post(
   '/users/logout/all',
   auth,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     req.user.tokens = [];
 
     await req.user.save();
@@ -110,20 +111,20 @@ router.post(
 );
 
 // // GET request for list of all Users.
-// router.get(
-//   '/users',
-//   auth,
-//   userMulter,
-//   jsonParser,
-//   parameterChecker,
-//   async (req: Request, res: Response) => {
-//     const users = await User.find({});
-//     users.forEach((user) => {
-//       user.toLimitedJSON(2);
-//     });
-//     return res.status(200).send(users);
-//   },
-// );
+router.get(
+  '/users',
+  auth,
+  userMulter,
+  jsonParser,
+  parameterChecker,
+  async (req: Request, res: Response) => {
+    const users = await User.find({});
+    users.forEach((user) => {
+      user.toLimitedJSON(2);
+    });
+    return res.status(200).send(users);
+  },
+);
 
 // GET request for list of all Users.
 router.get(
@@ -133,14 +134,18 @@ router.get(
   jsonParser,
   parameterChecker,
   async (req: Request, res: Response) => {
-    const trimmedUser = {};
-    Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
-      console.log(key);
-      if (req.body.requestedFields.includes(key)) {
-        trimmedUser[key] = req.user[key];
-        console.log(req.user[key]);
-      }
-    });
+    let trimmedUser = {};
+    if (req.body.requestedFields) {
+      Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
+        console.log(key);
+        if (req.body.requestedFields.includes(key)) {
+          trimmedUser[key] = req.user[key];
+          console.log(req.user[key]);
+        }
+      });
+    } else {
+      trimmedUser = req.user.toLimitedJSON(0);
+    }
     return res.status(200).send(trimmedUser);
   },
 );
@@ -177,7 +182,7 @@ router.patch(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     await User.verifyPassword(req.user, req.body.currentPassword);
 
     req.user.password = req.body.newPassword;
@@ -193,7 +198,7 @@ router.patch(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     await User.verifyPassword(req.user, req.body.password);
 
     const reqKeys = Object.keys(req.body);
@@ -217,7 +222,7 @@ router.patch(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     const reqKeys = Object.keys(req.body);
 
     reqKeys.forEach((key) => (req.user[key] = req.body[key]));
@@ -234,14 +239,18 @@ router.patch(
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {},
+          (err) => {
+            throw err;
+          },
         );
 
         req.files[
           mediaType[i]
         ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
         if (req.user[mediaType[i]]) {
-          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
+          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, (err) => {
+            throw err;
+          });
         }
         req.user[mediaType[i]] = `${filename}.${meta.ext}`;
       }
@@ -256,7 +265,7 @@ router.patch(
 router.delete(
   '/users/self',
   auth,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     await req.user.remove();
     return res.status(200).send();
   }),
@@ -268,7 +277,7 @@ router.delete(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     await req.user.remove();
     return res.status(200).send();
   }),

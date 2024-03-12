@@ -15,7 +15,7 @@ import * as utils from '../utils/utils.js';
 
 import ErrorAO from '../utils/ErrorAO.js';
 
-const schemaOptions: any = {
+const schemaOptions: unknown = {
   toJSON: {
     virtuals: true,
   },
