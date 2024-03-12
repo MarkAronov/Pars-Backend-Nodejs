@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
@@ -9,6 +9,7 @@ import auth from '../middleware/auth.js';
 import jsonParser from '../middleware/jsonParser.js';
 import { postMulter } from '../middleware/multer.js';
 import parameterChecker from '../middleware/parameterChecker.js';
+import { Request } from 'src/utils/types.js';
 
 import * as utils from '../utils/utils.js';
 
@@ -23,7 +24,7 @@ router.post(
   postMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     const post = new Post({ ...req.body, user: req.user._id });
 
     if (req.body.mainPost) {
@@ -60,7 +61,9 @@ router.post(
         await fs.rename(
           `${fileFolderPath}\\${filename}`,
           `${fileFolderPath}\\${filename}.${meta.ext}`,
-          () => {},
+          (err) => {
+            throw err;
+          },
         );
         mediaArray.push(`${filename}.${meta.ext}`);
       }
@@ -101,7 +104,7 @@ router.patch(
   postMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
     const mediaType = Object.keys(req.files)[0];
     const mediaFolderPath = path.join(utils.dirName(), '..\\..\\media\\');
@@ -116,7 +119,9 @@ router.patch(
         await fs.rename(
           `${mediaFolderPath}\\${mediaType}\\${filename}`,
           `${mediaFolderPath}\\${mediaType}\\${filename}.${meta.ext}`,
-          () => {},
+          (err) => {
+            throw err;
+          },
         );
         mediaArray.push(`${filename}.${meta.ext}`);
       }
@@ -149,7 +154,9 @@ router.patch(
       for (let i = 0; i < filesToRemove.length; i++) {
         const filePath = `${mediaFolderPath}\\${post.mediaType}\\${filesToRemove[i]}`;
         if (fs.existsSync(filePath)) {
-          fs.rm(filePath, () => {});
+          fs.rm(filePath, (err) => {
+            throw err;
+          });
           mediaArray.splice(mediaArray.indexOf(filesToRemove[i]), 1);
         }
       }
@@ -172,7 +179,7 @@ router.delete(
   '/posts/:id',
   auth,
   parameterChecker,
-  utils.wrap(async (req: any, res: Response) => {
+  utils.wrap(async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
 
     post.remove();

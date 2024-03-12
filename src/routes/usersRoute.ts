@@ -44,7 +44,9 @@ router.post(
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {},
+          (err) => {
+            throw err;
+          },
         );
 
         req.files[
@@ -100,7 +102,7 @@ router.post(
 
 // POST request for logging the user out from all sessions.
 router.post(
-  '/users/logout/all',
+  '/users/self/logoutall',
   auth,
   utils.wrap(async (req: Request, res: Response) => {
     req.user.tokens = [];
@@ -209,10 +211,7 @@ router.patch(
 
     await req.user.save();
 
-    return res.status(200).send({
-      full: req.user.toLimitedJSON(req.user, 0),
-      auth: req.user.toLimitedJSON(req.user, 2),
-    });
+    return res.status(200).send(req.user.toLimitedJSON(req.user, 2));
   }),
 );
 
@@ -278,7 +277,21 @@ router.delete(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    await req.user.remove();
+    for (const key in req.body) {
+      if (key === 'avatar' || key === 'backgroundImage') {
+        const filePath = path.join(
+          utils.dirName(),
+          `../../media/${key}s/${req.user[key]}`,
+        );
+        fs.rm(filePath, (err) => {
+          throw err;
+        });
+        req.user[key] = null;
+      } else {
+        req.user[key] = '';
+      }
+    }
+    await req.user.save();
     return res.status(200).send();
   }),
 );
