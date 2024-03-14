@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 
@@ -6,6 +6,7 @@ import { Post } from '../models/postsModel.js';
 import { User } from '../models/usersModel.js';
 
 import * as utils from '../utils/utils.js';
+import { Request } from 'src/utils/types.js';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/search', async (req, res) => {
             query: [query],
             path: ['username', 'displayName'],
             fuzzy: {
-              maxEdits: 1,
+              maxEdits: 2,
               prefixLength: 3,
             },
           },
@@ -49,17 +50,20 @@ router.get('/search', async (req, res) => {
   return res.status(200).send(results);
 });
 
-router.get('/media/:mediatype/:mediafile', async (req, res) => {
-  const filePath = path.join(
-    utils.dirName(),
-    `..\\..\\media\\${req.params.mediatype}\\${req.params.mediafile}`,
-  );
-  const meta = await fileTypeFromFile(filePath);
-  if (meta.ext === 'mp4') {
-    return res.status(200).sendFile(filePath);
-  } else {
-    return res.status(200).sendFile(filePath);
-  }
-});
+router.get(
+  '/media/:mediatype/:mediafile',
+  utils.wrap(async (req: Request, res: Response) => {
+    const filePath = path.join(
+      utils.dirName(),
+      `..\\..\\media\\${req.params.mediatype}\\${req.params.mediafile}`,
+    );
+    const meta = await fileTypeFromFile(filePath);
+    if (meta.ext === 'mp4') {
+      return res.status(200).sendFile(filePath);
+    } else {
+      return res.status(200).sendFile(filePath);
+    }
+  }),
+);
 
 export default router;

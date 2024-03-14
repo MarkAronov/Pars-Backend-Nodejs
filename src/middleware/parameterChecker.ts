@@ -1,9 +1,7 @@
 import ErrorAO from '../utils/ErrorAO.js';
 import { fileTypeFromFile } from 'file-type';
 import bcrypt from 'bcryptjs';
-import path from 'path';
 import _ from 'lodash';
-import fs from 'fs';
 
 import * as utils from '../utils/utils.js';
 // import { fileTypeFromFile } from 'file-type';
@@ -88,16 +86,16 @@ const requestMap = {
     },
   },
   DELETE: {
-    '/users/me': { requiredParams: [], optionalParams: [] },
-    '/users/me/partial': {
-      requiredParams: [],
-      optionalParams: ['bio', 'avatar', 'backgroundImage'],
+    '/users/self': { requiredParams: [], optionalParams: [] },
+    '/users/self/partial': {
+      requiredParams: ['requestedFields'],
+      optionalParams: [],
     },
     '/posts/:id': { requiredParams: [], optionalParams: [] },
   },
 };
 
-const userFields = [
+const requestedUserGETFields = [
   'email',
   'username',
   'displayName',
@@ -107,6 +105,8 @@ const userFields = [
   'avatar',
   'backgroundImage',
 ];
+
+const requestedUserDELETEFields = ['bio', 'avatar', 'backgroundImage'];
 
 const allowedFileTypes = {
   avatar: ['png', 'jpg', 'gif'],
@@ -210,7 +210,12 @@ const parameterChecker = utils.wrap(
       (req.method === 'GET' &&
         req.body.requestedFields &&
         !req.body.requestedFields.every((key: string) =>
-          userFields.includes(key),
+          requestedUserGETFields.includes(key),
+        )) ||
+      (req.method === 'DELETE' &&
+        req.body.requestedFields &&
+        !req.body.requestedFields.every((key: string) =>
+          requestedUserDELETEFields.includes(key),
         ))
     ) {
       throw new ErrorAO(
@@ -328,23 +333,12 @@ const parameterChecker = utils.wrap(
             'Either upload a set of images, a set of files or a single video.',
           ];
       }
-      if (Object.keys(req.files).length) {
+      if (req.files && Object.keys(req.files).length) {
         const mediaType = Object.keys(req.files)[0];
-        const fileFolderPath = path.join(
-          utils.dirName(),
-          `..\\..\\media\\${mediaType}`,
-        );
 
         for (let i = 0; i < req.files[mediaType].length; i++) {
           const meta = await fileTypeFromFile(req.files[mediaType][i].path);
-          console.log(meta);
           if (!allowedFileTypes[mediaType].includes(meta.ext)) {
-            for (let j = 0; j < req.files[mediaType].length; j++) {
-              const filename = req.files[mediaType][j].filename;
-              await fs.rm(`${fileFolderPath}\\${filename}`, (err) => {
-                throw err;
-              });
-            }
             errorArray.media = [
               `${mediaType} must only have files with the following formats: ${allowedFileTypes[
                 mediaType
@@ -355,7 +349,6 @@ const parameterChecker = utils.wrap(
         }
       }
     }
-
     if (Object.keys(errorArray).length) {
       throw new ErrorAO(errorArray, 'ParameterError');
     }

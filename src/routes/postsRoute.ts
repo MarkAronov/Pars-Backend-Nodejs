@@ -61,9 +61,7 @@ router.post(
         await fs.rename(
           `${fileFolderPath}\\${filename}`,
           `${fileFolderPath}\\${filename}.${meta.ext}`,
-          (err) => {
-            throw err;
-          },
+          () => {},
         );
         mediaArray.push(`${filename}.${meta.ext}`);
       }
@@ -119,9 +117,7 @@ router.patch(
         await fs.rename(
           `${mediaFolderPath}\\${mediaType}\\${filename}`,
           `${mediaFolderPath}\\${mediaType}\\${filename}.${meta.ext}`,
-          (err) => {
-            throw err;
-          },
+          () => {},
         );
         mediaArray.push(`${filename}.${meta.ext}`);
       }
@@ -154,9 +150,7 @@ router.patch(
       for (let i = 0; i < filesToRemove.length; i++) {
         const filePath = `${mediaFolderPath}\\${post.mediaType}\\${filesToRemove[i]}`;
         if (fs.existsSync(filePath)) {
-          fs.rm(filePath, (err) => {
-            throw err;
-          });
+          fs.rm(filePath, () => {});
           mediaArray.splice(mediaArray.indexOf(filesToRemove[i]), 1);
         }
       }

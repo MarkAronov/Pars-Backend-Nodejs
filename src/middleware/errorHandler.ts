@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as utils from '../utils/utils.js';
 
 const errorHandler = async (err, req, res, next) => {
@@ -7,14 +8,15 @@ const errorHandler = async (err, req, res, next) => {
     'VerificationError',
   ];
   const urlsThatUploadFiles = [
-    '/posts',
-    '/users/me/:mediatype',
-    '/posts/:id',
-    '/users/me',
     '/users',
+    '/users/self/regular',
+    '/posts',
+    '/posts/:id',
   ];
+
   console.log(err);
-  if (req.route.path === '/media/:mediatype/:mediafile' && err.status === 404) {
+
+  if (req.route.path === '/media/:mediatype/:mediafile') {
     return res.status(404).send({
       media: 'file does not exist',
     });
@@ -26,7 +28,7 @@ const errorHandler = async (err, req, res, next) => {
     await utils.removeFiles(req);
   }
   if (err.name === 'ValidationError') {
-    return res.status(400).send(utils.validationErrorComposer(err));
+    return res.status(400).send({ ERROR: utils.validationErrorComposer(err) });
   } else if (err.name === 'MulterError') {
     return res.status(400).send(utils.multerErrorComposer(err, req));
   } else if (preComposedErrors.includes(err.name)) {

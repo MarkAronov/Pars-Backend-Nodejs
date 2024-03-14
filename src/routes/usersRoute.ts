@@ -44,9 +44,7 @@ router.post(
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          (err) => {
-            throw err;
-          },
+          () => {},
         );
 
         req.files[
@@ -139,10 +137,8 @@ router.get(
     let trimmedUser = {};
     if (req.body.requestedFields) {
       Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
-        console.log(key);
         if (req.body.requestedFields.includes(key)) {
           trimmedUser[key] = req.user[key];
-          console.log(req.user[key]);
         }
       });
     } else {
@@ -223,9 +219,9 @@ router.patch(
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
     const reqKeys = Object.keys(req.body);
-
-    reqKeys.forEach((key) => (req.user[key] = req.body[key]));
-
+    if (reqKeys.length) {
+      reqKeys.forEach((key) => (req.user[key] = req.body[key]));
+    }
     if (Object.keys(req.files).length) {
       const mediaType = Object.keys(req.files);
       for (let i = 0; i < mediaType.length; i++) {
@@ -238,18 +234,14 @@ router.patch(
         fs.rename(
           `${fileFolderPath}/${filename}`,
           `${fileFolderPath}/${filename}.${meta.ext}`,
-          (err) => {
-            throw err;
-          },
+          () => {},
         );
 
         req.files[
           mediaType[i]
         ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
         if (req.user[mediaType[i]]) {
-          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, (err) => {
-            throw err;
-          });
+          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
         }
         req.user[mediaType[i]] = `${filename}.${meta.ext}`;
       }
@@ -277,19 +269,21 @@ router.delete(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    for (const key in req.body) {
-      if (key === 'avatar' || key === 'backgroundImage') {
-        const filePath = path.join(
-          utils.dirName(),
-          `../../media/${key}s/${req.user[key]}`,
-        );
-        fs.rm(filePath, (err) => {
-          throw err;
-        });
-        req.user[key] = null;
-      } else {
-        req.user[key] = '';
-      }
+    if (req.body.requestedFields) {
+      Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
+        if (req.body.requestedFields.includes(key)) {
+          if (key === 'avatar' || key === 'backgroundImage') {
+            const filePath = path.join(
+              utils.dirName(),
+              `../../media/${key}s/${req.user[key]}`,
+            );
+            fs.rm(filePath, () => {});
+            req.user[key] = null;
+          } else {
+            req.user[key] = '';
+          }
+        }
+      });
     }
     await req.user.save();
     return res.status(200).send();
