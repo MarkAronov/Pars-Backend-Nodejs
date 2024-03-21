@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 
-const schemaOptions: any = {
+const schemaOptions: object = {
   toJSON: {
     virtuals: true,
   },
@@ -73,47 +73,47 @@ PostSchema.virtual('mentioningChildren', {
 });
 
 PostSchema.method('toCustomJSON', async function toCustomJSON() {
-  const post = this;
-  await post.populate('mainPostChildren');
-  await post.populate('mentioningChildren');
-  const postObject = await post.toObject({ virtuals: true });
+  await this.populate('mainPostChildren');
+  await this.populate('mentioningChildren');
+  const postObject = await this.toObject({ virtuals: true });
   delete postObject.__v;
   return postObject;
 });
 
-PostSchema.pre('remove', async function preRemove(next: () => void) {
-  const post: any = this;
+PostSchema.pre(
+  'remove',
+  async function preRemove(this: IPostDocument, next: () => void) {
+    if (this.mediaType) {
+      this.media.forEach(async (element) => {
+        const filePath = `.\\media\\${this.mediaType}\\${element}`;
+        if (fs.existsSync(filePath)) fs.rm(filePath, null);
+      });
+    }
 
-  if (post.mediaType) {
-    post.media.forEach(async (element) => {
-      const filePath = `.\\media\\${post.mediaType}\\${element}`;
-      if (fs.existsSync(filePath)) fs.rm(filePath, () => {});
-    });
-  }
-
-  if (post.mainPost === null) {
-    await post.populate('mainPostChildren');
-    for (const childId of post.mainPostChildren) {
-      const childPost = await Post.findById(childId);
-      if (childPost) {
-        childPost.remove();
+    if (this.mainPost === null) {
+      await this.populate('mainPostChildren');
+      for (const childId of this.mainPostChildren) {
+        const childPost = await Post.findById(childId);
+        if (childPost) {
+          childPost.remove();
+        }
+      }
+    } else {
+      await this.populate('mentioningChildren');
+      for (const childId of this.mentioningChildren) {
+        const formerChild = await Post.findById(childId);
+        if (formerChild) {
+          formerChild.mentionedParents.splice(
+            formerChild.mentionedParents.indexOf(this._id),
+            1,
+          );
+          await formerChild.save();
+        }
       }
     }
-  } else {
-    await post.populate('mentioningChildren');
-    for (const childId of post.mentioningChildren) {
-      const formerChild = await Post.findById(childId);
-      if (formerChild) {
-        formerChild.mentionedParents.splice(
-          formerChild.mentionedParents.indexOf(post._id),
-          1,
-        );
-        await formerChild.save();
-      }
-    }
-  }
-  next();
-});
+    next();
+  },
+);
 
 export interface IPost extends mongoose.Document {
   title: string;
@@ -122,16 +122,18 @@ export interface IPost extends mongoose.Document {
   mainPost: mongoose.Types.ObjectId;
   mentionedParents: mongoose.Types.ObjectId[];
   media: string[];
-  mediaType: String;
+  mediaType: string;
   edited: boolean;
+  mentioningChildren?: mongoose.Types.ObjectId[];
+  mainPostChildren?: mongoose.Types.ObjectId[];
 }
 
-interface IPostDocument extends IPost {
+export interface IPostDocument extends IPost {
   toCustomJSON(): typeof Post;
   preRemove(next: () => void): void;
 }
 
-export interface IPostModel extends mongoose.Model<IPostDocument> {}
+export type IPostModel = mongoose.Model<IPostDocument>;
 
 // Export model
 export const Post: IPostModel = mongoose.model<IPostDocument, IPostModel>(

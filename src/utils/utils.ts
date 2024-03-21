@@ -13,7 +13,7 @@ export const dirName = () => dirname(fileURLToPath(import.meta.url));
  * @param {string} val
  * @return {any}
  */
-export const normalizePort = (val: string): any => {
+export const normalizePort = (val: string): boolean | string | number => {
   const port = parseInt(val, 10);
 
   if (isNaN(port)) {
@@ -84,7 +84,7 @@ export const entropy = (str: string): number => {
 export const validationErrorComposer = (error: any) => {
   const errorArray: { [key: string]: string[] } = {};
   const errorKeys: string[] = Object.keys(error.errors);
-  errorKeys.forEach((key: any) => {
+  errorKeys.forEach((key: string) => {
     const CapKey = key.charAt(0).toUpperCase() + key.slice(1);
 
     const errExtract = error.errors[key].properties.reason;
@@ -130,7 +130,7 @@ export const removeFiles = async (req: Request) => {
   Object.keys(req.files).forEach(async (mediaType) => {
     const files = req.files[mediaType];
     for (let i = 0; i < files.length; i++) {
-      await fs.rm(`${files[i].path}`, () => {});
+      await fs.rm(`${files[i].path}`, null);
     }
   });
 };

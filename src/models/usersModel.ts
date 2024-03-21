@@ -10,12 +10,12 @@ import mongoosastic, {
 
 import uniqueValidator from 'mongoose-unique-validator';
 
-import { Post } from './postsModel.js';
+import { IPostModel, Post } from './postsModel.js';
 import * as utils from '../utils/utils.js';
 
 import ErrorAO from '../utils/ErrorAO.js';
 
-const schemaOptions: unknown = {
+const schemaOptions: object = {
   toJSON: {
     virtuals: true,
   },
@@ -121,32 +121,28 @@ UserSchema.virtual('posts', {
 });
 
 UserSchema.method('generateToken', async function generateToken() {
-  const user = this;
-
-  const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_STRING!);
-  user.tokens = user.tokens.concat({ token });
-  await user.save();
+  const token = jwt.sign({ id: this._id.toString() }, process?.env?.JWT_STRING);
+  this.tokens = this.tokens.concat({ token });
+  await this.save();
   return token;
 });
 
-UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevevl: number) {
-  const user = this;
+UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevel: number) {
+  const userObject = this.toObject({ virtuals: true });
 
-  const userObject = user.toObject({ virtuals: true });
-
-  if (user.settings.hideWhenMade) {
+  if (this.settings.hideWhenMade) {
     delete userObject.createdAt;
   }
   delete userObject.password;
   delete userObject.formerPasswords;
   delete userObject.__v;
   delete userObject._id;
-  if (limitLevevl >= 1) {
+  if (limitLevel >= 1) {
     delete userObject.tokens;
     delete userObject.settings;
     delete userObject.email;
   }
-  if (limitLevevl >= 2) {
+  if (limitLevel >= 2) {
     delete userObject.updatedAt;
     delete userObject.createdAt;
   }
@@ -183,33 +179,33 @@ UserSchema.static('verifyPassword', async (user: IUser, password: string) => {
   return;
 });
 
-UserSchema.pre('remove', async function preRemove(next) {
-  const user: any = this;
-  await user.populate('posts');
-  for (const postID of user.posts) {
-    const post = await Post.findById(postID);
-    await post.remove();
-  }
-  const fileFolderPath = path.join(utils.dirName(), '../../media/');
-  if (this.avatar) {
-    await fs.rm(`${fileFolderPath}/avatars/${user.avatar}`, () => {});
-  }
-  if (this.backgroundImage) {
-    await fs.rm(
-      `${fileFolderPath}/backgroundImages/${user.backgroundImage}`,
-      () => {},
-    );
-  }
-  next();
-});
+UserSchema.pre(
+  'remove',
+  async function preRemove(this: IUserDocument, next: () => void) {
+    await this.populate('posts');
+    for (const postID of this.posts) {
+      const post = await Post.findById(postID);
+      await post.remove();
+    }
+    const fileFolderPath = path.join(utils.dirName(), '../../media/');
+    if (this.avatar) {
+      await fs.rm(`${fileFolderPath}/avatars/${this.avatar}`, null);
+    }
+    if (this.backgroundImage) {
+      await fs.rm(
+        `${fileFolderPath}/backgroundImages/${this.backgroundImage}`,
+        null,
+      );
+    }
+    next();
+  },
+);
 
 UserSchema.pre('save', async function preSave(next) {
-  const user: any = this;
-
-  if (user.isModified('password')) {
-    const hashedPassword = await bcrypt.hash(user.password, 8);
-    user.formerPasswords.push(hashedPassword);
-    user.password = hashedPassword;
+  if (this.isModified('password')) {
+    const hashedPassword = await bcrypt.hash(this.password, 8);
+    this.formerPasswords.push(hashedPassword);
+    this.password = hashedPassword;
   }
   next();
 });
@@ -230,19 +226,19 @@ export interface IUser extends mongoose.Document, MongoosasticDocument {
     hidePosts: boolean;
   };
   formerPasswords: string[];
+  posts?: IPostModel[];
 }
 
 UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
 interface IUserDocument extends IUser {
   generateToken(): string;
-  toLimitedJSON(limitLevevl: number): typeof User;
+  toLimitedJSON(limitLevel: number): typeof User;
 }
 
 export interface IUserModel extends MongoosasticModel<IUserDocument> {
-  [x: string]: any;
   verifyPassword(user: IUserModel, currentPassword: string);
-  verifyCredentials(email: string, password: string): any;
+  verifyCredentials(email: string, password: string): typeof User;
 }
 
 // Export model
