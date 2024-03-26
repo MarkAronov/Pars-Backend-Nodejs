@@ -3,10 +3,10 @@
  */
 class ErrorAO extends Error {
   errorAO:
-  | {
-    [key: string]: string[];
-  }
-  | string[];
+    | {
+        [key: string]: string[];
+      }
+    | string[];
 
   status: number;
 
@@ -18,10 +18,10 @@ class ErrorAO extends Error {
    */
   constructor(
     errorAO?:
-    | {
-      [key: string]: string[];
-    }
-    | string[],
+      | {
+          [key: string]: string[];
+        }
+      | string[],
     name?: string,
     status?: number,
     ...params: string[]

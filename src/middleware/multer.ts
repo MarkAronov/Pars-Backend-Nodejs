@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import multer from 'multer';
 import * as crypto from 'crypto';
 
@@ -5,20 +6,12 @@ import * as crypto from 'crypto';
 const megabyte = 1000000;
 
 const storage = multer.diskStorage({
-  destination: async (
-    req: any,
-    file: any,
-    cb: (arg0: null, arg1: any) => void,
-  ) => {
+  destination: async (req, file, cb: (arg0: null, arg1) => void) => {
     const isUserRoute = req.route.path.toString().indexOf('/users') >= 0;
     const folder = `./media/${file.fieldname}${isUserRoute ? 's' : ''}`;
     cb(null, folder);
   },
-  filename: async (
-    req: any,
-    file: any,
-    cb: (arg0: null, arg1: string) => void,
-  ) => {
+  filename: async (req, file, cb: (arg0: null, arg1: string) => void) => {
     const uniqueSuffix = crypto.randomBytes(16).toString('hex');
     cb(null, file.fieldname + '-' + Date.now() + '-' + uniqueSuffix);
   },

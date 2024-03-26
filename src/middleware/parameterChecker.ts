@@ -33,7 +33,6 @@ const requestMap = {
       requiredParams: ['title'],
       optionalParams: [
         'content',
-        'mainPost',
         'mentionedParents',
         'images',
         'videos',
@@ -76,7 +75,6 @@ const requestMap = {
       optionalParams: [
         'title',
         'content',
-        'mainPost',
         'mentionedParents',
         'filesToRemove',
         'images',

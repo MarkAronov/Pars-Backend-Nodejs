@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { Request } from 'express';
 import validator from 'validator';
 import fs from 'fs';
@@ -81,7 +82,7 @@ export const entropy = (str: string): number => {
   return E;
 };
 
-export const validationErrorComposer = (error: any) => {
+export const validationErrorComposer = (error) => {
   const errorArray: { [key: string]: string[] } = {};
   const errorKeys: string[] = Object.keys(error.errors);
   errorKeys.forEach((key: string) => {
@@ -110,7 +111,7 @@ export const validationErrorComposer = (error: any) => {
   return errorArray;
 };
 
-export const multerErrorComposer = (err: any, req: any) => {
+export const multerErrorComposer = (err) => {
   const errorMessages = {
     LIMIT_PART_COUNT: 'Too many parts',
     LIMIT_FILE_SIZE: 'File too large',
@@ -130,12 +131,12 @@ export const removeFiles = async (req: Request) => {
   Object.keys(req.files).forEach(async (mediaType) => {
     const files = req.files[mediaType];
     for (let i = 0; i < files.length; i++) {
-      await fs.rm(`${files[i].path}`, null);
+      await fs.rm(`${files[i].path}`, () => {});
     }
   });
 };
 
 export const wrap =
-  (fn: any) =>
-  (...args: any) =>
+  (fn) =>
+  (...args) =>
     fn(...args).catch(args[2]);

@@ -1,12 +1,9 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import mongoosastic, {
-  MongoosasticDocument,
-  MongoosasticModel,
-} from 'mongoosastic';
 
 import uniqueValidator from 'mongoose-unique-validator';
 
@@ -111,7 +108,6 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
   },
   schemaOptions,
 );
-UserSchema.plugin(mongoosastic);
 UserSchema.index({ username: 'text', displayName: 'text' });
 
 UserSchema.virtual('posts', {
@@ -128,9 +124,9 @@ UserSchema.method('generateToken', async function generateToken() {
 });
 
 UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevel: number) {
-  const userObject = this.toObject({ virtuals: true });
+  const userObject: IUserBaseDocument = this.toObject({ virtuals: true });
 
-  if (this.settings.hideWhenMade) {
+  if (userObject.settings.hideWhenMade) {
     delete userObject.createdAt;
   }
   delete userObject.password;
@@ -180,28 +176,29 @@ UserSchema.static('verifyPassword', async (user: IUser, password: string) => {
 });
 
 UserSchema.pre(
-  'remove',
-  async function preRemove(this: IUserDocument, next: () => void) {
+  'deleteOne',
+  { document: true, query: false },
+  async function preRemove(this: IUserBaseDocument, next: () => void) {
     await this.populate('posts');
     for (const postID of this.posts) {
       const post = await Post.findById(postID);
-      await post.remove();
+      await post.deleteOne();
     }
     const fileFolderPath = path.join(utils.dirName(), '../../media/');
     if (this.avatar) {
-      await fs.rm(`${fileFolderPath}/avatars/${this.avatar}`, null);
+      await fs.rm(`${fileFolderPath}/avatars/${this.avatar}`, () => {});
     }
     if (this.backgroundImage) {
       await fs.rm(
         `${fileFolderPath}/backgroundImages/${this.backgroundImage}`,
-        null,
+        () => {},
       );
     }
     next();
   },
 );
 
-UserSchema.pre('save', async function preSave(next) {
+UserSchema.pre('save', async function preSave(this: IUserBaseDocument, next) {
   if (this.isModified('password')) {
     const hashedPassword = await bcrypt.hash(this.password, 8);
     this.formerPasswords.push(hashedPassword);
@@ -210,7 +207,7 @@ UserSchema.pre('save', async function preSave(next) {
   next();
 });
 
-export interface IUser extends mongoose.Document, MongoosasticDocument {
+interface IUser {
   username: string;
   displayName: string;
   email: string;
@@ -229,20 +226,20 @@ export interface IUser extends mongoose.Document, MongoosasticDocument {
   posts?: IPostModel[];
 }
 
+interface IUserMethods {
+  generateToken(): string;
+  toLimitedJSON(limitLevel: number): UserModel;
+  verifyPassword(user: IUser, currentPassword: string): null;
+  verifyCredentials(email: string, password: string): UserModel;
+}
+
+// Create a new Model type that knows about IUserMethods...
+type UserModel = mongoose.Model<IUser, IUserMethods>;
+
 UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
-interface IUserDocument extends IUser {
-  generateToken(): string;
-  toLimitedJSON(limitLevel: number): typeof User;
-}
-
-export interface IUserModel extends MongoosasticModel<IUserDocument> {
-  verifyPassword(user: IUserModel, currentPassword: string);
-  verifyCredentials(email: string, password: string): typeof User;
-}
-
 // Export model
-export const User: IUserModel = mongoose.model<IUserDocument, IUserModel>(
+export const User = mongoose.model<IUser, IUserMethods, UserModel>(
   'User',
   UserSchema,
 );

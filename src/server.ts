@@ -40,7 +40,7 @@ server.listen(port);
 /**
  * Event listener for HTTP server "error" event.
  */
-server.on('error', (error: { syscall: string; code: any }) => {
+server.on('error', (error: { syscall: string; code: string }) => {
   if (error.syscall !== 'listen') {
     throw error;
   }

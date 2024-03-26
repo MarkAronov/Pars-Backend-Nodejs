@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import mongoose from 'mongoose';
 import fs from 'fs';
 
@@ -31,11 +32,6 @@ const PostSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    mainPost: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Post',
-      default: null,
-    },
     mentionedParents: {
       type: [
         {
@@ -60,12 +56,6 @@ const PostSchema = new mongoose.Schema(
 
 PostSchema.index({ title: 'text' });
 
-PostSchema.virtual('mainPostChildren', {
-  ref: 'Post',
-  localField: '_id',
-  foreignField: 'mainPost',
-});
-
 PostSchema.virtual('mentioningChildren', {
   ref: 'Post',
   localField: '_id',
@@ -73,44 +63,35 @@ PostSchema.virtual('mentioningChildren', {
 });
 
 PostSchema.method('toCustomJSON', async function toCustomJSON() {
-  await this.populate('mainPostChildren');
   await this.populate('mentioningChildren');
   const postObject = await this.toObject({ virtuals: true });
-  delete postObject.__v;
   return postObject;
 });
 
 PostSchema.pre(
-  'remove',
+  'deleteOne',
+  { document: true, query: false },
   async function preRemove(this: IPostDocument, next: () => void) {
+    console.log(this);
     if (this.mediaType) {
       this.media.forEach(async (element) => {
         const filePath = `.\\media\\${this.mediaType}\\${element}`;
-        if (fs.existsSync(filePath)) fs.rm(filePath, null);
+        if (fs.existsSync(filePath)) fs.rm(filePath, () => {});
       });
     }
 
-    if (this.mainPost === null) {
-      await this.populate('mainPostChildren');
-      for (const childId of this.mainPostChildren) {
-        const childPost = await Post.findById(childId);
-        if (childPost) {
-          childPost.remove();
-        }
-      }
-    } else {
-      await this.populate('mentioningChildren');
-      for (const childId of this.mentioningChildren) {
-        const formerChild = await Post.findById(childId);
-        if (formerChild) {
-          formerChild.mentionedParents.splice(
-            formerChild.mentionedParents.indexOf(this._id),
-            1,
-          );
-          await formerChild.save();
-        }
+    await this.populate('mentioningChildren');
+    for (const childId of this.mentioningChildren) {
+      const formerChild = await Post.findById(childId);
+      if (formerChild) {
+        formerChild.mentionedParents.splice(
+          formerChild.mentionedParents.indexOf(this._id),
+          1,
+        );
+        await formerChild.save();
       }
     }
+
     next();
   },
 );
@@ -119,13 +100,11 @@ export interface IPost extends mongoose.Document {
   title: string;
   content: string;
   user: mongoose.Types.ObjectId;
-  mainPost: mongoose.Types.ObjectId;
   mentionedParents: mongoose.Types.ObjectId[];
   media: string[];
   mediaType: string;
   edited: boolean;
   mentioningChildren?: mongoose.Types.ObjectId[];
-  mainPostChildren?: mongoose.Types.ObjectId[];
 }
 
 export interface IPostDocument extends IPost {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
@@ -26,13 +27,6 @@ router.post(
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
     const post = new Post({ ...req.body, user: req.user._id });
-
-    if (req.body.mainPost) {
-      post.mainPost = null;
-
-      const mainPost = await Post.findById(req.body.mainPost);
-      if (mainPost) post.mainPost = mainPost._id;
-    }
 
     if (req.body.mentionedParents) {
       const mentionedParents = utils.filterDupes(
@@ -91,7 +85,7 @@ router.get(
   utils.wrap(async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
     const fullPost = await post.toCustomJSON();
-    return res.status(200).send(fullPost);
+    return res.status(201).send(fullPost);
   }),
 );
 
@@ -124,11 +118,6 @@ router.patch(
     }
     post.title = req.body.title ? req.body.title : post.title;
     post.content = req.body.content ? req.body.content : post.content;
-
-    if (req.body.mainPost) {
-      const mainPost = await Post.findById(req.body.mainPost);
-      if (mainPost) post.mainPost = mainPost._id;
-    }
 
     if (req.body.mentionedParents) {
       post.mentionedParents = [];
@@ -164,7 +153,7 @@ router.patch(
     }
     await post.save();
     const fullPost = await post.toCustomJSON();
-    return res.status(201).send(fullPost);
+    return res.status(200).send(fullPost);
   }),
 );
 
@@ -175,8 +164,7 @@ router.delete(
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
     const post = await Post.findById(req.params.id);
-
-    post.remove();
+    await post.deleteOne();
     return res.status(200).send();
   }),
 );

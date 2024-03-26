@@ -13,7 +13,7 @@ const router = express.Router();
 /// OTHER NEEDED ROUTES ///
 // GET request for finding posts/users
 router.get('/search', async (req, res) => {
-  const results: any = { users: null, posts: null };
+  const results = { users: null, posts: null };
   if (req.query?.q) {
     const query = req.query.q.toString();
     console.log(query);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
@@ -75,8 +76,8 @@ router.post(
       req.body.password,
     );
 
-    const token = await userToLimit.generateToken(userToLimit);
-    const user = userToLimit.toLimitedJSON(userToLimit, 2);
+    const token = await userToLimit.generateToken();
+    const user = userToLimit.toLimitedJSON(2);
     return res.status(200).send({ user, token });
   }),
 );
@@ -90,7 +91,7 @@ router.post(
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
     req.user.tokens = req.user.tokens.filter(
-      (token: any) => token.token !== req.token,
+      (tokens) => tokens.token !== req.token,
     );
 
     await req.user.save();
@@ -207,7 +208,7 @@ router.patch(
 
     await req.user.save();
 
-    return res.status(200).send(req.user.toLimitedJSON(req.user, 2));
+    return res.status(200).send(req.user.toLimitedJSON(2));
   }),
 );
 
@@ -247,7 +248,7 @@ router.patch(
       }
     }
     await req.user.save();
-    return res.status(200).send(req.user.toLimitedJSON(req.user, 2));
+    return res.status(200).send(req.user.toLimitedJSON(2));
   }),
 );
 
@@ -257,7 +258,7 @@ router.delete(
   '/users/self',
   auth,
   utils.wrap(async (req: Request, res: Response) => {
-    await req.user.remove();
+    await req.user.deleteOne();
     return res.status(200).send();
   }),
 );

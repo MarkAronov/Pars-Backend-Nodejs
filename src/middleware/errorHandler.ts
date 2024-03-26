@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as utils from '../utils/utils.js';
 
@@ -30,7 +31,7 @@ const errorHandler = async (err, req, res, next) => {
   if (err.name === 'ValidationError') {
     return res.status(400).send({ ERROR: utils.validationErrorComposer(err) });
   } else if (err.name === 'MulterError') {
-    return res.status(400).send(utils.multerErrorComposer(err, req));
+    return res.status(400).send(utils.multerErrorComposer(err));
   } else if (preComposedErrors.includes(err.name)) {
     return res.status(err.status).send(err.errorAO);
   } else return res.status(500).send(err.toString());

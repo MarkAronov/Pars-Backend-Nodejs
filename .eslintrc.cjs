@@ -31,7 +31,7 @@ module.exports = {
       'func-names': 'off',
       'no-invalid-this': 'off',
       'no-explicit-any': 'off',
-      'no-unused-vars': 'error',
+      'no-unused-vars': 'off',
       'no-console': 'off',
       'func-names': 'off',
       'no-process-exit': 'off',
