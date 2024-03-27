@@ -136,6 +136,7 @@ router.get(
   parameterChecker,
   async (req: Request, res: Response) => {
     let trimmedUser = {};
+    await req.user.populate('posts');
     if (req.body.requestedFields) {
       Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
         if (req.body.requestedFields.includes(key)) {

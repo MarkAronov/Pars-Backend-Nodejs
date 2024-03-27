@@ -1,5 +1,5 @@
 import { Request as expressRequest } from 'express';
-import { IUser } from 'src/models/usersModel';
+import { User } from 'src/models/usersModel';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -16,7 +16,7 @@ export interface RequestMapConfig {
 }
 
 export interface Request extends expressRequest {
-  user?: IUser;
+  user?: typeof User;
   token?: string;
 }
 

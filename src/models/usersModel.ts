@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-empty-function */
 import mongoose from 'mongoose';
 import fs from 'fs';
@@ -12,6 +13,38 @@ import * as utils from '../utils/utils.js';
 
 import ErrorAO from '../utils/ErrorAO.js';
 
+interface IUser {
+  username: string;
+  displayName: string;
+  email: string;
+  password: string;
+  bio: string;
+  tokens: {
+    token: string;
+  }[];
+  avatar: string;
+  backgroundImage: string;
+  settings: {
+    hideWhenMade: boolean;
+    hidePosts: boolean;
+  };
+  formerPasswords: string[];
+  posts?: IPostModel[];
+}
+
+interface IUserMethods {
+  generateToken(): string;
+  toLimitedJSON(limitLevel: number): UserModel;
+}
+
+interface UserModel extends mongoose.Model<IUser, {}, IUserMethods> {
+  verifyPassword(user: IUser, currentPassword: string): null;
+  verifyCredentials(
+    email: string,
+    password: string,
+  ): Promise<mongoose.HydratedDocument<IUser, IUserMethods>>;
+}
+
 const schemaOptions: object = {
   toJSON: {
     virtuals: true,
@@ -23,7 +56,7 @@ const schemaOptions: object = {
   id: false,
 };
 
-const UserSchema: mongoose.Schema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
   {
     username: {
       type: String,
@@ -108,6 +141,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
   },
   schemaOptions,
 );
+
 UserSchema.index({ username: 'text', displayName: 'text' });
 
 UserSchema.virtual('posts', {
@@ -124,7 +158,7 @@ UserSchema.method('generateToken', async function generateToken() {
 });
 
 UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevel: number) {
-  const userObject: IUserBaseDocument = this.toObject({ virtuals: true });
+  const userObject = this.toObject({ virtuals: true });
 
   if (userObject.settings.hideWhenMade) {
     delete userObject.createdAt;
@@ -147,8 +181,9 @@ UserSchema.method('toLimitedJSON', function toLimitedJSON(limitLevel: number) {
 
 UserSchema.static(
   'verifyCredentials',
-  async (email: string, password: string) => {
-    const user = await User.findOne({ email });
+  // eslint-disable-next-line prefer-arrow-callback
+  async function verifyCredentials(email: string, password: string) {
+    const user: typeof User = await User.findOne({ email });
     if (!user) {
       throw new ErrorAO({ email: ['Invalid email.'] }, 'VerificationError');
     }
@@ -164,21 +199,25 @@ UserSchema.static(
   },
 );
 
-UserSchema.static('verifyPassword', async (user: IUser, password: string) => {
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    throw new ErrorAO(
-      { password: ['Incorrect password.'] },
-      'VerificationError',
-    );
-  }
-  return;
-});
+UserSchema.static(
+  'verifyPassword',
+  // eslint-disable-next-line prefer-arrow-callback
+  async function verifyPassword(user: typeof User, password: string) {
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      throw new ErrorAO(
+        { password: ['Incorrect password.'] },
+        'VerificationError',
+      );
+    }
+    return;
+  },
+);
 
 UserSchema.pre(
   'deleteOne',
   { document: true, query: false },
-  async function preRemove(this: IUserBaseDocument, next: () => void) {
+  async function preRemove(this: typeof User, next: () => void) {
     await this.populate('posts');
     for (const postID of this.posts) {
       const post = await Post.findById(postID);
@@ -198,7 +237,7 @@ UserSchema.pre(
   },
 );
 
-UserSchema.pre('save', async function preSave(this: IUserBaseDocument, next) {
+UserSchema.pre('save', async function preSave(this: typeof User, next) {
   if (this.isModified('password')) {
     const hashedPassword = await bcrypt.hash(this.password, 8);
     this.formerPasswords.push(hashedPassword);
@@ -207,39 +246,7 @@ UserSchema.pre('save', async function preSave(this: IUserBaseDocument, next) {
   next();
 });
 
-interface IUser {
-  username: string;
-  displayName: string;
-  email: string;
-  password: string;
-  bio: string;
-  tokens: {
-    token: string;
-  }[];
-  avatar: string;
-  backgroundImage: string;
-  settings: {
-    hideWhenMade: boolean;
-    hidePosts: boolean;
-  };
-  formerPasswords: string[];
-  posts?: IPostModel[];
-}
-
-interface IUserMethods {
-  generateToken(): string;
-  toLimitedJSON(limitLevel: number): UserModel;
-  verifyPassword(user: IUser, currentPassword: string): null;
-  verifyCredentials(email: string, password: string): UserModel;
-}
-
-// Create a new Model type that knows about IUserMethods...
-type UserModel = mongoose.Model<IUser, IUserMethods>;
-
 UserSchema.plugin(uniqueValidator, { message: 'dupe' });
 
 // Export model
-export const User = mongoose.model<IUser, IUserMethods, UserModel>(
-  'User',
-  UserSchema,
-);
+export const User = mongoose.model<IUser, UserModel>('User', UserSchema);
