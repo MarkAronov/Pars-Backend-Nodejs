@@ -1,0 +1,8 @@
+/node_modules
+/media
+s_key.mjs
+test.js
+node_modules
+/tests
+/config/.env.dev
+package-lock.json

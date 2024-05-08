@@ -1,0 +1,7 @@
+{
+  "ignore": [".git", "node_modules", "dist", "./src/**/*.spec.ts"],
+  "watch": ["src"],
+  "exec": "node --no-warnings=ExperimentalWarning --loader ts-node/esm ./src/server.ts && eslint .",
+  "ext": "js, json, ts, proto",
+  "test": "-f ./config/test.env jest --watchAll --detectOpenHandles --silent=false"
+}
