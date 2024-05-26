@@ -4,7 +4,7 @@ import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
-import { User } from '../models/usersModel.js';
+import { IUser, User } from '../models/usersModel.js';
 
 import auth from '../middleware/auth.js';
 import jsonParser from '../middleware/jsonParser.js';
@@ -13,7 +13,13 @@ import parameterChecker from '../middleware/parameterChecker.js';
 
 import ErrorAO from '../utils/ErrorAO.js';
 import * as utils from '../utils/utils.js';
-import { Request } from 'src/utils/types.js';
+import {
+  UserMediaTypeKeys,
+  Request,
+  UserType,
+  UserRegularPatchTypeKeys,
+  UserPartialDeleteTypeKeys,
+} from 'src/utils/types.js';
 
 const router = express.Router();
 
@@ -27,31 +33,34 @@ router.post(
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
     const userData = req.body;
-    userData.displayName = req.body.displayName
-      ? req.body.displayName
-      : req.body.username;
+    userData.displayName = req.body.displayName || req.body.username;
     const createdUser = new User(userData);
 
-    if (Object.keys(req.files).length) {
-      const mediaType = Object.keys(req.files);
+    if (req.files && Object.keys(req.files).length) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const mediaTypes = Object.keys(files);
 
-      for (let i = 0; i < mediaType.length; i++) {
-        const fileFolderPath = path.join(
-          utils.dirName(),
-          `../../media/${mediaType[i]}s`,
-        );
-        const filename = req.files[mediaType[i]][0].filename;
-        const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
-        fs.rename(
-          `${fileFolderPath}/${filename}`,
-          `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {},
-        );
+      for (const mediaType of mediaTypes) {
+        const filesArray = files[mediaType];
+        if (filesArray && filesArray.length > 0) {
+          const file = filesArray[0];
+          const fileFolderPath = path.join(
+            utils.dirName(),
+            `../../media/${mediaType}s`,
+          );
+          const filename = file?.filename;
+          const meta = await fileTypeFromFile(file?.path as string);
+          const newFilename = `${filename}.${meta?.ext}`;
+          await fs.rename(
+            `${fileFolderPath}/${filename}`,
+            `${fileFolderPath}/${newFilename}`,
+            () => {},
+          );
 
-        req.files[
-          mediaType[i]
-        ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
-        createdUser[mediaType[i]] = `${filename}.${meta.ext}`;
+          // Update the file information in the request object and user data
+          if (file) file.filename = path.join(fileFolderPath, newFilename);
+          createdUser[mediaType as UserMediaTypeKeys] = newFilename;
+        }
       }
     }
 
@@ -59,7 +68,6 @@ router.post(
 
     const user = createdUser.toLimitedJSON(2);
     const token = await createdUser.generateToken();
-
     return res.status(201).send({ user, token });
   }),
 );
@@ -91,11 +99,16 @@ router.post(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    req.user.tokens = req.user.tokens.filter(
-      (tokens) => tokens.token !== req.token,
-    );
+    if (req.user) {
+      req.user.tokens = req.user.tokens?.filter(
+        (tokens) => tokens.token !== req.token,
+      ) as {
+        token: string;
+      }[];
 
-    await req.user.save();
+      await req.user.save();
+    }
+
     return res.status(200).send();
   }),
 );
@@ -105,9 +118,10 @@ router.post(
   '/users/self/logoutall',
   auth,
   utils.wrap(async (req: Request, res: Response) => {
-    req.user.tokens = [];
-
-    await req.user.save();
+    if (req.user) {
+      req.user.tokens = [];
+      await req.user.save();
+    }
     return res.status(200).send();
   }),
 );
@@ -120,7 +134,7 @@ router.get(
   jsonParser,
   parameterChecker,
   async (req: Request, res: Response) => {
-    const users = await User.find({});
+    const users: UserType[] = await User.find({});
     users.forEach((user) => {
       user.toLimitedJSON(2);
     });
@@ -136,16 +150,20 @@ router.get(
   jsonParser,
   parameterChecker,
   async (req: Request, res: Response) => {
-    let trimmedUser = {};
-    await req.user.populate('posts');
-    if (req.body.requestedFields) {
-      Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
-        if (req.body.requestedFields.includes(key)) {
-          trimmedUser[key] = req.user[key];
-        }
-      });
-    } else {
-      trimmedUser = req.user.toLimitedJSON(0);
+    let trimmedUser: Partial<UserType> = {};
+    if (req.user) {
+      await req.user.populate('posts');
+      if (req.body.requestedFields) {
+        const userKeys = Object.keys(req.user.toLimitedJSON(0));
+        for (const userKey of userKeys)
+          if (req.user && req.body.requestedFields.includes(userKey)) {
+            let trimmedUserVal = trimmedUser[userKey as keyof Partial<IUser>];
+            if (trimmedUserVal)
+              trimmedUserVal = req.user[userKey as keyof IUser];
+          }
+      } else {
+        trimmedUser = req.user.toLimitedJSON(0);
+      }
     }
     return res.status(200).send(trimmedUser);
   },
@@ -159,16 +177,16 @@ router.get(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    const user = await User.findOne({ username: req.params.username });
+    const user = await User.findOne({ username: req.params['username'] });
     if (!user)
       throw new ErrorAO(
         {
-          MAIN: [`No user with that name: ${req.params.username}`],
+          MAIN: [`No user with that name: ${req.params['username']}`],
         },
         'VerificationError',
       );
 
-    if (!user.settings.hidePosts) {
+    if (user.settings?.hidePosts) {
       await user.populate('posts');
     }
 
@@ -184,11 +202,13 @@ router.patch(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    await User.verifyPassword(req.user, req.body.currentPassword);
+    if (req.user) {
+      await req.user.verifyPassword(req.body.currentPassword);
 
-    req.user.password = req.body.newPassword;
+      req.user.password = req.body.newPassword;
 
-    await req.user.save();
+      await req.user.save();
+    }
     return res.status(200).send();
   }),
 );
@@ -200,17 +220,19 @@ router.patch(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    await User.verifyPassword(req.user, req.body.password);
+    if (req.user) {
+      await req.user.verifyPassword(req.body.password);
 
-    const reqKeys = Object.keys(req.body);
+      const reqKeys = Object.keys(req.body);
+      for (const reqKey of reqKeys) {
+        if (reqKey !== 'password' && req.user)
+          req.user[reqKey as keyof IUser] = req.body[reqKey];
+      }
 
-    reqKeys.forEach((key) => {
-      if (key !== 'password') req.user[key] = req.body[key];
-    });
-
-    await req.user.save();
-
-    return res.status(200).send(req.user.toLimitedJSON(2));
+      await req.user.save();
+      return res.status(200).send(req.user.toLimitedJSON(2));
+    }
+    return res.status(200).send();
   }),
 );
 
@@ -221,36 +243,53 @@ router.patch(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    const reqKeys = Object.keys(req.body);
-    if (reqKeys.length) {
-      reqKeys.forEach((key) => (req.user[key] = req.body[key]));
-    }
-    if (Object.keys(req.files).length) {
-      const mediaType = Object.keys(req.files);
-      for (let i = 0; i < mediaType.length; i++) {
-        const fileFolderPath = path.join(
-          utils.dirName(),
-          `../../media/${mediaType[i]}s`,
-        );
-        const filename = req.files[mediaType[i]][0].filename;
-        const meta = await fileTypeFromFile(req.files[mediaType[i]][0].path);
-        fs.rename(
-          `${fileFolderPath}/${filename}`,
-          `${fileFolderPath}/${filename}.${meta.ext}`,
-          () => {},
-        );
-
-        req.files[
-          mediaType[i]
-        ][0].filename = `${fileFolderPath}\\${filename}.${meta.ext}`;
-        if (req.user[mediaType[i]]) {
-          fs.rm(`${fileFolderPath}/${req.user[mediaType[i]]}`, () => {});
-        }
-        req.user[mediaType[i]] = `${filename}.${meta.ext}`;
+    const userData = req.body;
+    const reqKeys = Object.keys(userData);
+    if (req.user) {
+      for (const reqKey of reqKeys) {
+        req.user[reqKey as UserRegularPatchTypeKeys] = req.body[reqKey];
       }
+
+      if (req.files && Object.keys(req.files).length) {
+        const files = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+        const mediaTypes = Object.keys(files);
+
+        for (const mediaType of mediaTypes) {
+          const filesArray = files[mediaType];
+          if (filesArray && filesArray.length > 0) {
+            const file = filesArray[0];
+            const fileFolderPath = path.join(
+              utils.dirName(),
+              `../../media/${mediaType}s`,
+            );
+            let filename = file?.filename;
+            const meta = await fileTypeFromFile(file?.path as string);
+            const newFilename = `${filename}.${meta?.ext}`;
+            await fs.rename(
+              `${fileFolderPath}/${filename}`,
+              `${fileFolderPath}/${newFilename}`,
+              () => {},
+            );
+
+            filename = `${fileFolderPath}\\${filename}.${meta?.ext}`;
+            if (req.user[mediaType as UserMediaTypeKeys]) {
+              fs.rm(
+                `${fileFolderPath}/${req.user[mediaType as UserMediaTypeKeys]}`,
+                () => {},
+              );
+            }
+            req.user[
+              mediaType as UserMediaTypeKeys
+            ] = `${filename}.${meta?.ext}`;
+          }
+        }
+      }
+      await req.user.save();
+      return res.status(200).send(req.user.toLimitedJSON(2));
     }
-    await req.user.save();
-    return res.status(200).send(req.user.toLimitedJSON(2));
+    return res.status(200).send();
   }),
 );
 
@@ -260,7 +299,7 @@ router.delete(
   '/users/self',
   auth,
   utils.wrap(async (req: Request, res: Response) => {
-    await req.user.deleteOne();
+    await req?.user?.deleteOne();
     return res.status(200).send();
   }),
 );
@@ -272,23 +311,27 @@ router.delete(
   jsonParser,
   parameterChecker,
   utils.wrap(async (req: Request, res: Response) => {
-    if (req.body.requestedFields) {
-      Object.keys(req.user.toLimitedJSON(0)).forEach((key) => {
-        if (req.body.requestedFields.includes(key)) {
-          if (key === 'avatar' || key === 'backgroundImage') {
+    if (req.user && req.body.requestedFields) {
+      const userKeys = Object.keys(req.user.toLimitedJSON(0));
+      for (const userKey of userKeys) {
+        if (req.body.requestedFields.includes(userKey)) {
+          if (userKey === 'avatar' || userKey === 'backgroundImage') {
             const filePath = path.join(
               utils.dirName(),
-              `../../media/${key}s/${req.user[key]}`,
+              `../../media/${userKey}s/${
+                req.user[userKey as UserMediaTypeKeys]
+              }`,
             );
             fs.rm(filePath, () => {});
-            req.user[key] = null;
+            req.user[userKey as UserMediaTypeKeys] = null;
           } else {
-            req.user[key] = '';
+            req.user[userKey as UserPartialDeleteTypeKeys] = null;
           }
         }
-      });
+      }
+
+      await req.user.save();
     }
-    await req.user.save();
     return res.status(200).send();
   }),
 );

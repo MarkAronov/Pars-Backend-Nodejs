@@ -1,8 +1,15 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextFunction, Response } from 'express';
 import * as utils from '../utils/utils.js';
+import { Request } from 'src/utils/types.js';
 
-const errorHandler = async (err, req, res, next) => {
+const errorHandler = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  err: any,
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction,
+) => {
   const preComposedErrors = [
     'AuthenticationError',
     'ParameterError',

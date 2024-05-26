@@ -1,5 +1,7 @@
 import { Request as expressRequest } from 'express';
-import { User } from 'src/models/usersModel';
+import { HydratedDocument } from 'mongoose';
+import { IPost, IPostMethods, IPostVirtuals } from 'src/models/postsModel';
+import { IUser, IUserMethods, IUserVirtuals } from 'src/models/usersModel';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -9,6 +11,31 @@ export interface RouteConfig {
   isParameterFree: boolean;
 }
 
+export type ParameterList = {
+  [index: string]: {
+    [index: string]: { requiredParams: string[]; optionalParams: string[] };
+  };
+};
+
+export type UserType = HydratedDocument<IUser, IUserMethods & IUserVirtuals>;
+export type PostType = HydratedDocument<IPost, IPostMethods & IPostVirtuals>;
+
+export type UserMediaTypeKeys = 'avatar' | 'backgroundImage';
+export type UserPartialDeleteTypeKeys = 'bio' | 'avatar' | 'backgroundImage';
+export type UserRegularPatchTypeKeys =
+  | 'displayName'
+  | 'bio'
+  | 'avatar'
+  | 'backgroundImage'
+  | 'settings';
+export type UserOptionalTypeKeys = 'bio';
+export type allowedMediaTypesKeys =
+  | 'avatar'
+  | 'backgroundImage'
+  | 'images'
+  | 'videos'
+  | 'datafiles';
+
 export interface RequestMapConfig {
   [method: string]: {
     [route: string]: RouteConfig;
@@ -16,7 +43,7 @@ export interface RequestMapConfig {
 }
 
 export interface Request extends expressRequest {
-  user?: typeof User;
+  user?: UserType;
   token?: string;
 }
 

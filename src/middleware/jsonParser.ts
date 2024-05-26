@@ -1,6 +1,8 @@
 import ErrorAO from '../utils/ErrorAO.js';
+import { Request } from 'src/utils/types.js';
+import { Response, NextFunction } from 'express';
 
-const jsonParser = (req, res, next) => {
+const jsonParser = (req: Request, res: Response, next: NextFunction) => {
   if (req.body && Object.keys(req.body).includes('content')) {
     try {
       const reqJSONContent =

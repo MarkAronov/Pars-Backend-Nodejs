@@ -1,6 +1,35 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import mongoose from 'mongoose';
 import fs from 'fs';
+import { PostType } from 'src/utils/types';
+
+export interface IPost {
+  title: string;
+  content: string;
+  user: mongoose.Types.ObjectId;
+  mentionedParents: mongoose.Types.ObjectId[];
+  media: string[];
+  mediaType: string | null;
+  edited: boolean;
+}
+
+export interface IPostVirtuals {
+  mentioningChildren: mongoose.Types.ObjectId[];
+}
+
+export interface IPostMethods {
+  generateToken(): string;
+  toCustomJSON(): mongoose.HydratedDocument<
+    IPost,
+    IPostMethods & IPostVirtuals
+  >;
+  verifyPassword(currentPassword: string): null;
+}
+
+export type PostModel = mongoose.Model<
+  IPost,
+  object,
+  IPostMethods & IPostVirtuals
+>;
 
 const schemaOptions: object = {
   toJSON: {
@@ -71,13 +100,14 @@ PostSchema.method('toCustomJSON', async function toCustomJSON() {
 PostSchema.pre(
   'deleteOne',
   { document: true, query: false },
-  async function preRemove(this: IPostDocument, next: () => void) {
+  async function preRemove(this: PostType, next: () => void) {
     console.log(this);
     if (this.mediaType) {
-      this.media.forEach(async (element) => {
-        const filePath = `.\\media\\${this.mediaType}\\${element}`;
+      for (const file of this.media) {
+        const filePath = `.\\media\\${this.mediaType}\\${file}`;
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         if (fs.existsSync(filePath)) fs.rm(filePath, () => {});
-      });
+      }
     }
 
     await this.populate('mentioningChildren');
@@ -96,21 +126,7 @@ PostSchema.pre(
   },
 );
 
-export interface IPost extends mongoose.Document {
-  title: string;
-  content: string;
-  user: mongoose.Types.ObjectId;
-  mentionedParents: mongoose.Types.ObjectId[];
-  media: string[];
-  mediaType: string;
-  edited: boolean;
-  mentioningChildren?: mongoose.Types.ObjectId[];
-}
-
-export interface IPostDocument extends IPost {
-  toCustomJSON(): typeof Post;
-  preRemove(next: () => void): void;
-}
+export type IPostDocument = IPost;
 
 export type IPostModel = mongoose.Model<IPostDocument>;
 

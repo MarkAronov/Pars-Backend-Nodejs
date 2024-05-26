@@ -5,12 +5,16 @@ import _ from 'lodash';
 
 import * as utils from '../utils/utils.js';
 // import { fileTypeFromFile } from 'file-type';
-import { Post } from '../models/postsModel.js';
-import { User } from '../models/usersModel.js';
-import { Request } from 'src/utils/types.js';
+import { IPost, Post } from '../models/postsModel.js';
+import { IUser, User } from '../models/usersModel.js';
+import {
+  ParameterList,
+  Request,
+  allowedMediaTypesKeys,
+} from 'src/utils/types.js';
 import { Response } from 'express';
 
-const requestMap = {
+const requestMap: ParameterList = {
   POST: {
     '/users': {
       requiredParams: ['email', 'username', 'password'],
@@ -68,6 +72,7 @@ const requestMap = {
         'hidePosts',
         'avatar',
         'backgroundImage',
+        'settings',
       ],
     },
     '/posts/:id': {
@@ -124,20 +129,38 @@ const allowedMediaTypes = [
 
 const parameterChecker = utils.wrap(
   async (req: Request, res: Response, next: () => void) => {
-    let reqKeys = req.body ? Object.keys(req.body) : [];
-    reqKeys = req.files ? reqKeys.concat(Object.keys(req.files)) : reqKeys;
+    const reqKeys = [
+      ...(req.body ? Object.keys(req.body) : []),
+      ...(req.files ? Object.keys(req.files) : []),
+    ];
+    const reqMethod: string | undefined = req.method;
+    const routePath: string | undefined = req.route?.path;
 
-    const requiredParams =
-      requestMap[req.method][req.route.path]?.requiredParams;
-    const optionalParams =
-      requestMap[req.method][req.route.path]?.optionalParams;
+    if (!reqMethod || !routePath) {
+      throw new ErrorAO({ MAIN: ['Malformed request'] }, 'RequestError', 500);
+    }
+
+    const methodRoutes = requestMap[reqMethod];
+    if (!methodRoutes) {
+      throw new ErrorAO(
+        { MAIN: ['Unsupported request method'] },
+        'RequestError',
+        400,
+      );
+    }
+
+    const routeConfig = methodRoutes[routePath];
+    if (!routeConfig) {
+      throw new ErrorAO({ MAIN: ['Unknown route path'] }, 'RequestError', 404);
+    }
+
+    const { requiredParams, optionalParams } = routeConfig;
 
     const parameterFreeRequest =
-      (!requiredParams.length && !optionalParams.length) ||
-      req.method === 'GET';
+      (!requiredParams.length && !optionalParams.length) || reqMethod === 'GET';
 
-    const isPostRequest = req.route.path.indexOf('/posts') >= 0;
-    const isUserRequest = req.route.path.indexOf('/users') >= 0;
+    const isPostRequest = routePath.indexOf('/posts') >= 0;
+    const isUserRequest = routePath.indexOf('/users') >= 0;
 
     let dupeFlag = false;
     const errorArray: {
@@ -150,7 +173,7 @@ const parameterChecker = utils.wrap(
     // Precursor, check if user is valid
     if (isUserRequest) {
       try {
-        user = await User.findOne({ username: req.params.username });
+        user = await User.findOne({ username: req.params['username'] });
       } catch (err) {
         throw new ErrorAO(
           { MAIN: ['Invalid Username'] },
@@ -161,37 +184,47 @@ const parameterChecker = utils.wrap(
     }
     if (isPostRequest) {
       try {
-        post = await Post.findById(req.params.id);
+        post = await Post.findById(req.params['id']);
       } catch (err) {
         throw new ErrorAO({ MAIN: ['Invalid Post ID'] }, 'ParameterError', 403);
       }
     }
 
     // First case, check for permissions
-    if (isUserRequest && req.params.username) {
+    if (isUserRequest && req.params['username']) {
       if (!user)
         throw new ErrorAO(
           {
-            MAIN: [`There's no user with the username: ${req.params.username}`],
+            MAIN: [
+              `There's no user with the username: ${req.params['username']}`,
+            ],
           },
           'ParameterError',
           404,
         );
-      if (!user._id.equals(currentUser._id) && req.method !== 'GET')
+      if (
+        currentUser &&
+        !user._id.equals(currentUser._id) &&
+        reqMethod !== 'GET'
+      )
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this user'] },
           'ParameterError',
           403,
         );
     }
-    if (isPostRequest && req.params.id) {
+    if (isPostRequest && req.params['id']) {
       if (!post)
         throw new ErrorAO(
-          { MAIN: [`No post by that ID: ${req.params.id}`] },
+          { MAIN: [`No post by that ID: ${req.params['id']}`] },
           'ParameterError',
           404,
         );
-      if (!post.user._id.equals(currentUser._id) && req.method !== 'GET')
+      if (
+        currentUser &&
+        !post.user._id.equals(currentUser._id) &&
+        reqMethod !== 'GET'
+      )
         throw new ErrorAO(
           { MAIN: ['You are not allowed to change/delete this post'] },
           'ParameterError',
@@ -205,12 +238,12 @@ const parameterChecker = utils.wrap(
         (key: string) =>
           requiredParams.includes(key) || optionalParams.includes(key),
       ) ||
-      (req.method === 'GET' &&
+      (reqMethod === 'GET' &&
         req.body.requestedFields &&
         !req.body.requestedFields.every((key: string) =>
           requestedUserGETFields.includes(key),
         )) ||
-      (req.method === 'DELETE' &&
+      (reqMethod === 'DELETE' &&
         req.body.requestedFields &&
         !req.body.requestedFields.every((key: string) =>
           requestedUserDELETEFields.includes(key),
@@ -240,41 +273,42 @@ const parameterChecker = utils.wrap(
     if (
       optionalParams.length &&
       optionalParams.every((key) => !reqKeys.includes(key)) &&
-      req.method === 'PATCH'
+      reqMethod === 'PATCH'
     ) {
-      errorArray.MAIN = [
+      errorArray['MAIN'] = [
         `Missing one of the following optional parameters: ${optionalParams.join(
           ', ',
         )}`,
       ];
     }
-    for (let i = 0; i < requiredParams.length; i++) {
-      const key: string = requiredParams[i];
-      const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
-      if (!reqKeys.includes(key)) {
-        errorArray[key] = [`${errorKey} is missing and it's needed`];
+    for (const reqParam of requiredParams) {
+      if (!reqKeys.includes(reqParam)) {
+        errorArray[reqParam] = [`${reqParam} is missing and it's needed`];
       }
     }
 
     // Fourth case, check if there are valid files from the request
     if (
       (dupeFlag =
-        req.files && isPostRequest && Object.keys(req.files).length > 1)
+        req.files !== undefined &&
+        isPostRequest &&
+        ((Object.keys(req.files).length > 1) as boolean))
     ) {
-      errorArray.media = [
+      errorArray['media'] = [
         'Either upload a set of images, a set of files or a single video',
       ];
     }
 
     // Fifth case, check if the patch request ins't violating any rules
-    if (req.method === 'PATCH') {
-      for (let i = 0; i < reqKeys.length; i++) {
-        const key: string = reqKeys[i];
-        const errorKey = key.charAt(0).toUpperCase() + key.slice(1);
+    if (reqMethod === 'PATCH') {
+      for (const reqKey of reqKeys) {
+        const errorKey: string = (reqKey.charAt(0).toUpperCase() +
+          reqKey.slice(1)) as string;
 
         if (
-          key === 'filesToRemove' &&
+          reqKey === 'filesToRemove' &&
           isPostRequest &&
+          req.files !== undefined &&
           Object.keys(req.files).length
         ) {
           const filesToRemove = utils.filterDupes(
@@ -284,33 +318,42 @@ const parameterChecker = utils.wrap(
 
           if (
             !dupeFlag &&
-            !post.media.every((file) => filesToRemove.includes(file)) &&
-            mediaType !== post.mediaType
+            !post?.media.every((file) => filesToRemove.includes(file)) &&
+            mediaType !== post?.mediaType
           ) {
             const errMsg =
               "You can't have multiple media types in the same post";
-            errorArray.media = errorArray.media
-              ? errorArray.media.concat([errMsg])
+            errorArray['media'] = errorArray['media']
+              ? errorArray['media'].concat([errMsg])
               : [errMsg];
           }
         }
 
-        if (key === 'newPassword') {
-          for (let j = 0; j < currentUser.formerPasswords.length; j++) {
-            const keyPass = currentUser.formerPasswords[j];
-            if (await bcrypt.compare(req.body[key], keyPass)) {
-              errorArray.password = [
-                'Password was formally used, use another.',
-              ];
+        if (currentUser !== undefined && reqKey === 'newPassword') {
+          const formerPasses = currentUser.formerPasswords;
+          if (formerPasses) {
+            for (const formerPass of formerPasses) {
+              if (await bcrypt.compare(req.body[reqKey], formerPass)) {
+                errorArray['password'] = [
+                  'Password was formally used, use another.',
+                ];
+              }
             }
           }
         }
 
         if (
-          (isUserRequest && _.isEqual(currentUser[key] ?? '', req.body[key])) ||
-          (isPostRequest && _.isEqual(post[key] ?? '', req.body[key]))
+          (currentUser &&
+            isUserRequest &&
+            _.isEqual(
+              currentUser[reqKey as keyof IUser] ?? '',
+              req.body[reqKey],
+            )) ||
+          (post &&
+            isPostRequest &&
+            _.isEqual(post[reqKey as keyof IPost] ?? '', req.body[reqKey]))
         ) {
-          errorArray[key] = [
+          errorArray[reqKey] = [
             `${errorKey} has the same value as what's currently stored, try another.`,
           ];
         }
@@ -318,29 +361,35 @@ const parameterChecker = utils.wrap(
     }
 
     // Sixth case, check if the files that were received are valid
-    if (req.method === 'POST' || req.method === 'PATCH') {
+    if (reqMethod === 'POST' || reqMethod === 'PATCH') {
       if (
         Object.keys(req.body).some((param) => allowedMediaTypes.includes(param))
       ) {
         if (isUserRequest)
-          errorArray.media = [
+          errorArray['media'] = [
             'Either upload an avatar or/and a background image.',
           ];
         if (isPostRequest)
-          errorArray.media = [
+          errorArray['media'] = [
             'Either upload a set of images, a set of files or a single video.',
           ];
       }
       if (req.files && Object.keys(req.files).length) {
-        const mediaType = Object.keys(req.files)[0];
-
-        for (let i = 0; i < req.files[mediaType].length; i++) {
-          const meta = await fileTypeFromFile(req.files[mediaType][i].path);
-          if (!allowedFileTypes[mediaType].includes(meta.ext)) {
-            errorArray.media = [
-              `${mediaType} must only have files with the following formats: ${allowedFileTypes[
-                mediaType
-              ].join(', ')}.`,
+        const files = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+        const mediaType = Object.keys(req.files)[0] as string;
+        const mediaFiles = files[mediaType] as Express.Multer.File[];
+        const allowedType = allowedFileTypes[
+          mediaType as allowedMediaTypesKeys
+        ] as string[];
+        for (const file of mediaFiles) {
+          const meta = await fileTypeFromFile(file.path);
+          if (!allowedType.includes(meta?.ext as string)) {
+            errorArray['media'] = [
+              `${mediaType} must only have files with the following formats: ${allowedType.join(
+                ', ',
+              )}.`,
             ];
             break;
           }

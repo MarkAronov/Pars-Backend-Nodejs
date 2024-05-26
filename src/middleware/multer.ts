@@ -6,7 +6,7 @@ import * as crypto from 'crypto';
 const megabyte = 1000000;
 
 const storage = multer.diskStorage({
-  destination: async (req, file, cb: (arg0: null, arg1) => void) => {
+  destination: async (req, file, cb: (arg0: null, arg1: string) => void) => {
     const isUserRoute = req.route.path.toString().indexOf('/users') >= 0;
     const folder = `./media/${file.fieldname}${isUserRoute ? 's' : ''}`;
     cb(null, folder);

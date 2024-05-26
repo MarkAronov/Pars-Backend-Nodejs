@@ -19,7 +19,7 @@ import miscRouter from './routes/miscRoutes.js';
 dotenv.config({
   path: path.join(
     `${process.cwd()}/config/`,
-    `.env${process.env.NODE_ENV === 'test' ? '.test' : '.dev'}`,
+    `.env${process.env['NODE_ENV'] === 'test' ? '.test' : '.dev'}`,
   ),
 });
 

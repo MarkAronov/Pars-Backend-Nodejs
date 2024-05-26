@@ -4,18 +4,20 @@ import { fileTypeFromFile } from 'file-type';
 
 import { Post } from '../models/postsModel.js';
 import { User } from '../models/usersModel.js';
-
+import { UserType, PostType } from 'src/utils/types.js';
 import * as utils from '../utils/utils.js';
 import { Request } from 'src/utils/types.js';
 
 const router = express.Router();
-
 /// OTHER NEEDED ROUTES ///
 // GET request for finding posts/users
 router.get('/search', async (req, res) => {
-  const results = { users: null, posts: null };
-  if (req.query?.q) {
-    const query = req.query.q.toString();
+  const results: { users: UserType[]; posts: PostType[] } = {
+    users: [],
+    posts: [],
+  };
+  if (req.query?.['q']) {
+    const query = req.query['q'].toString();
     console.log(query);
     results.users = await User.aggregate([
       {
@@ -55,10 +57,10 @@ router.get(
   utils.wrap(async (req: Request, res: Response) => {
     const filePath = path.join(
       utils.dirName(),
-      `..\\..\\media\\${req.params.mediatype}\\${req.params.mediafile}`,
+      `..\\..\\media\\${req.params['mediatype']}\\${req.params['mediafile']}`,
     );
     const meta = await fileTypeFromFile(filePath);
-    if (meta.ext === 'mp4') {
+    if (meta?.ext === 'mp4') {
       return res.status(200).sendFile(filePath);
     } else {
       return res.status(200).sendFile(filePath);
