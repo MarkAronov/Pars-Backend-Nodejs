@@ -267,6 +267,7 @@ router.patch(
             let filename = file?.filename;
             const meta = await fileTypeFromFile(file?.path as string);
             const newFilename = `${filename}.${meta?.ext}`;
+
             await fs.rename(
               `${fileFolderPath}/${filename}`,
               `${fileFolderPath}/${newFilename}`,
@@ -274,15 +275,16 @@ router.patch(
             );
 
             filename = `${fileFolderPath}\\${filename}.${meta?.ext}`;
+
             if (req.user[mediaType as UserMediaTypeKeys]) {
-              fs.rm(
-                `${fileFolderPath}/${req.user[mediaType as UserMediaTypeKeys]}`,
+              console.log(`${req.user[mediaType as UserMediaTypeKeys]}`);
+              await fs.rm(
+                `${req.user[mediaType as UserMediaTypeKeys]}`,
                 () => {},
               );
             }
-            req.user[
-              mediaType as UserMediaTypeKeys
-            ] = `${filename}.${meta?.ext}`;
+
+            req.user[mediaType as UserMediaTypeKeys] = filename;
           }
         }
       }

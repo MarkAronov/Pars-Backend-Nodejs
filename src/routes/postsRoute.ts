@@ -105,6 +105,14 @@ router.patch(
       const mediaFolderPath = path.join(utils.dirName(), '..\\..\\media\\');
 
       if (req.files && Object.keys(req.files).length) {
+        if (post.mediaType) {
+          const path = `${mediaFolderPath}\\${post.mediaType}\\`;
+          for (const postFile of post.media) {
+            console.log(`${path}\\${postFile}`);
+            await fs.rm(`${path}\\${postFile}`, () => {});
+          }
+        }
+
         const files = req.files as {
           [fieldname: string]: Express.Multer.File[];
         };
@@ -125,6 +133,7 @@ router.patch(
         post.media = mediaArray;
         post.mediaType = mediaArray.length ? (mediaType as string) : null;
       }
+
       post.title = req.body.title || post.title;
       post.content = req.body.content || post.content;
 
@@ -147,8 +156,9 @@ router.patch(
 
         for (const fileToRemove of filesToRemove) {
           const filePath = `${mediaFolderPath}\\${post.mediaType}\\${fileToRemove}`;
+          console.log(filePath);
           if (fs.existsSync(filePath)) {
-            fs.rm(filePath, () => {});
+            await fs.rm(filePath, () => {});
             mediaArray.splice(mediaArray.indexOf(fileToRemove), 1);
           }
         }
