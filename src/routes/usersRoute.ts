@@ -1,41 +1,42 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
+// Import necessary modules and dependencies
 import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
-import { IUser, User } from '../models/usersModel.js';
-
+import { User } from '../models/usersModel.js';
 import auth from '../middleware/auth.js';
 import jsonParser from '../middleware/jsonParser.js';
 import { userMulter } from '../middleware/multer.js';
 import parameterChecker from '../middleware/parameterChecker.js';
 
-import ErrorAO from '../utils/ErrorAO.js';
-import * as utils from '../utils/utils.js';
+import { ErrorAO, dirName, wrap } from '../utils/index.js';
 import {
   UserMediaTypeKeys,
   Request,
   UserType,
   UserRegularPatchTypeKeys,
   UserPartialDeleteTypeKeys,
-} from 'src/utils/types.js';
+  IUser,
+} from '../types/index.js';
 
+// Create a new express router
 const router = express.Router();
 
 // / USER ROUTES ///
 
-// POST request for creating User.
+// POST request for creating a new User.
 router.post(
   '/users',
-  userMulter,
-  jsonParser,
-  parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  userMulter, // Middleware for handling file uploads
+  jsonParser, // Middleware for parsing JSON data
+  parameterChecker, // Middleware for checking parameters
+  wrap(async (req: Request, res: Response) => {
     const userData = req.body;
     userData.displayName = req.body.displayName || req.body.username;
     const createdUser = new User(userData);
 
+    // Handle file uploads
     if (req.files && Object.keys(req.files).length) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const mediaTypes = Object.keys(files);
@@ -45,7 +46,7 @@ router.post(
         if (filesArray && filesArray.length > 0) {
           const file = filesArray[0];
           const fileFolderPath = path.join(
-            utils.dirName(),
+            dirName(),
             `../../media/${mediaType}s`,
           );
           const filename = file?.filename;
@@ -54,6 +55,7 @@ router.post(
           await fs.rename(
             `${fileFolderPath}/${filename}`,
             `${fileFolderPath}/${newFilename}`,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
             () => {},
           );
 
@@ -78,7 +80,7 @@ router.post(
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     const userToLimit = await User.verifyCredentials(
       req.body.email,
       req.body.password,
@@ -94,17 +96,15 @@ router.post(
 // POST request for logging the user out.
 router.post(
   '/users/logout',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     if (req.user) {
       req.user.tokens = req.user.tokens?.filter(
         (tokens) => tokens.token !== req.token,
-      ) as {
-        token: string;
-      }[];
+      ) as { token: string }[];
 
       await req.user.save();
     }
@@ -116,8 +116,8 @@ router.post(
 // POST request for logging the user out from all sessions.
 router.post(
   '/users/self/logoutall',
-  auth,
-  utils.wrap(async (req: Request, res: Response) => {
+  auth, // Middleware for authentication
+  wrap(async (req: Request, res: Response) => {
     if (req.user) {
       req.user.tokens = [];
       await req.user.save();
@@ -126,13 +126,16 @@ router.post(
   }),
 );
 
-// // GET request for list of all Users.
+// GET request for list of all Users.
 router.get(
   '/users',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (req: Request, res: Response) => {
     const users: UserType[] = await User.find({});
     users.forEach((user) => {
@@ -142,10 +145,10 @@ router.get(
   },
 );
 
-// GET request for list of all Users.
+// GET request for the authenticated User's details.
 router.get(
   '/users/self',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
@@ -169,23 +172,23 @@ router.get(
   },
 );
 
-// GET request for one User.
+// GET request for one User by username.
 router.get(
   '/users/u/:username',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     const user = await User.findOne({ username: req.params['username'] });
-    if (!user)
+    if (!user) {
       throw new ErrorAO(
         {
           MAIN: [`No user with that name: ${req.params['username']}`],
         },
         'VerificationError',
       );
-
+    }
     if (user.settings?.hidePosts) {
       await user.populate('posts');
     }
@@ -194,14 +197,14 @@ router.get(
   }),
 );
 
-// PATCH requests to update User.
+// PATCH request to update User's password.
 router.patch(
   '/users/self/password',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     if (req.user) {
       await req.user.verifyPassword(req.body.currentPassword);
 
@@ -213,20 +216,22 @@ router.patch(
   }),
 );
 
+// PATCH request to update important User details.
 router.patch(
   '/users/self/important',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     if (req.user) {
       await req.user.verifyPassword(req.body.password);
 
       const reqKeys = Object.keys(req.body);
       for (const reqKey of reqKeys) {
-        if (reqKey !== 'password' && req.user)
+        if (reqKey !== 'password' && req.user) {
           req.user[reqKey as keyof IUser] = req.body[reqKey];
+        }
       }
 
       await req.user.save();
@@ -236,13 +241,14 @@ router.patch(
   }),
 );
 
+// PATCH request to update regular User details.
 router.patch(
   '/users/self/regular',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     const userData = req.body;
     const reqKeys = Object.keys(userData);
     if (req.user) {
@@ -250,6 +256,7 @@ router.patch(
         req.user[reqKey as UserRegularPatchTypeKeys] = req.body[reqKey];
       }
 
+      // Handle file uploads
       if (req.files && Object.keys(req.files).length) {
         const files = req.files as {
           [fieldname: string]: Express.Multer.File[];
@@ -261,7 +268,7 @@ router.patch(
           if (filesArray && filesArray.length > 0) {
             const file = filesArray[0];
             const fileFolderPath = path.join(
-              utils.dirName(),
+              dirName(),
               `../../media/${mediaType}s`,
             );
             let filename = file?.filename;
@@ -271,6 +278,7 @@ router.patch(
             await fs.rename(
               `${fileFolderPath}/${filename}`,
               `${fileFolderPath}/${newFilename}`,
+              // eslint-disable-next-line @typescript-eslint/no-empty-function
               () => {},
             );
 
@@ -280,6 +288,7 @@ router.patch(
               console.log(`${req.user[mediaType as UserMediaTypeKeys]}`);
               await fs.rm(
                 `${req.user[mediaType as UserMediaTypeKeys]}`,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
                 () => {},
               );
             }
@@ -295,35 +304,36 @@ router.patch(
   }),
 );
 
-// DELETE requests to delete User or User objects.
-
+// DELETE request to delete the authenticated User.
 router.delete(
   '/users/self',
-  auth,
-  utils.wrap(async (req: Request, res: Response) => {
+  auth, // Middleware for authentication
+  wrap(async (req: Request, res: Response) => {
     await req?.user?.deleteOne();
     return res.status(200).send();
   }),
 );
 
+// DELETE request to partially delete User objects.
 router.delete(
   '/users/self/partial',
-  auth,
+  auth, // Middleware for authentication
   userMulter,
   jsonParser,
   parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     if (req.user && req.body.requestedFields) {
       const userKeys = Object.keys(req.user.toLimitedJSON(0));
       for (const userKey of userKeys) {
         if (req.body.requestedFields.includes(userKey)) {
           if (userKey === 'avatar' || userKey === 'backgroundImage') {
             const filePath = path.join(
-              utils.dirName(),
+              dirName(),
               `../../media/${userKey}s/${
                 req.user[userKey as UserMediaTypeKeys]
               }`,
             );
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
             fs.rm(filePath, () => {});
             req.user[userKey as UserMediaTypeKeys] = null;
           } else {

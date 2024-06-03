@@ -1,38 +1,38 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+
+// Import necessary modules and dependencies
 import express, { Response } from 'express';
 import path from 'path';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
 import { Post } from '../models/postsModel.js';
-
 import auth from '../middleware/auth.js';
 import jsonParser from '../middleware/jsonParser.js';
 import { postMulter } from '../middleware/multer.js';
 import parameterChecker from '../middleware/parameterChecker.js';
-import { PostType, Request } from 'src/utils/types.js';
+import { PostType, Request } from '../types/index.js';
+import { dirName, filterDupes, wrap } from '../utils/index.js';
 
-import * as utils from '../utils/utils.js';
-
+// Create a new express router
 const router = express.Router();
 
 /// POST ROUTES ///
 
-// POST request for creating Post.
+// POST request for creating a new Post.
 router.post(
   '/posts',
-  auth,
-  postMulter,
-  jsonParser,
-  parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  auth, // Middleware for authentication
+  postMulter, // Middleware for handling file uploads
+  jsonParser, // Middleware for parsing JSON data
+  parameterChecker, // Middleware for checking parameters
+  wrap(async (req: Request, res: Response) => {
+    // Create a new Post instance with the request body and user ID
     const post = new Post({ ...req.body, user: req?.user?._id }) as PostType;
 
+    // Handle mentioned parents
     if (req.body.mentionedParents) {
-      const mentionedParents = utils.filterDupes(
-        req.body.mentionedParents.slice(),
-      );
-
+      const mentionedParents = filterDupes(req.body.mentionedParents.slice());
       for (const mentionedParent of mentionedParents) {
         post.mentionedParents = [];
         const parent = await Post.findById(mentionedParent);
@@ -40,12 +40,13 @@ router.post(
       }
     }
 
+    // Handle file uploads
     if (req.files && Object.keys(req.files).length) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const mediaType = Object.keys(req.files)[0] as string;
       const mediaFiles = files[mediaType] as Express.Multer.File[];
       const mediaFolderPath = path.join(
-        utils.dirName(),
+        dirName(),
         `..\\..\\media\\${mediaType}`,
       );
       const mediaArray: string[] = [];
@@ -65,6 +66,7 @@ router.post(
       post.mediaType = mediaType as string;
     }
 
+    // Save the post and return the full post data
     await post.save();
     const fullPost = await post.toCustomJSON();
     return res.status(200).send(fullPost);
@@ -74,36 +76,43 @@ router.post(
 // GET request for list of all Post items.
 router.get(
   '/posts',
-  utils.wrap(async (req: Request, res: Response) => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  wrap(async (req: Request, res: Response) => {
+    // Fetch all posts from the database
     const posts = await Post.find({});
     return res.status(200).send(posts);
   }),
 );
 
-// GET request for one Post.
+// GET request for a specific Post by ID.
 router.get(
   '/posts/:id',
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
+    // Fetch the post by ID and return the full post data
     const post = (await Post.findById(req.params['id'])) as PostType;
     const fullPost = await post.toCustomJSON();
     return res.status(201).send(fullPost);
   }),
 );
 
-// GET request to update Post.
+// PATCH request to update a Post by ID.
 router.patch(
   '/posts/:id',
-  auth,
-  postMulter,
-  jsonParser,
-  parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  auth, // Middleware for authentication
+  postMulter, // Middleware for handling file uploads
+  jsonParser, // Middleware for parsing JSON data
+  parameterChecker, // Middleware for checking parameters
+  wrap(async (req: Request, res: Response) => {
+    // Fetch the post by ID and update its fields
     const post = (await Post.findById(req.params['id'])) as PostType;
     let fullPost;
     if (post) {
       let mediaArray: string[] = post.media;
-      const mediaFolderPath = path.join(utils.dirName(), '..\\..\\media\\');
+      const mediaFolderPath = path.join(dirName(), '..\\..\\media\\');
 
+      // Handle new file uploads and remove old files if necessary
       if (req.files && Object.keys(req.files).length) {
         if (post.mediaType) {
           const path = `${mediaFolderPath}\\${post.mediaType}\\`;
@@ -134,26 +143,25 @@ router.patch(
         post.mediaType = mediaArray.length ? (mediaType as string) : null;
       }
 
+      // Update the post's title and content
       post.title = req.body.title || post.title;
       post.content = req.body.content || post.content;
 
+      // Update mentioned parents
       if (req.body.mentionedParents) {
         post.mentionedParents = [];
-        const mentionedParents = utils.filterDupes(
-          req.body.mentionedParents.slice(),
-        );
-
+        const mentionedParents = filterDupes(req.body.mentionedParents.slice());
         for (const mentionedParent of mentionedParents) {
           const parent = await Post.findById(mentionedParent);
           if (parent) post.mentionedParents.push(parent._id);
         }
       }
 
+      // Handle files to be removed
       if (req.body.filesToRemove) {
         const filesToRemove = post.mediaType
           ? post.media.slice()
-          : utils.filterDupes(req.body.filesToRemove.slice());
-
+          : filterDupes(req.body.filesToRemove.slice());
         for (const fileToRemove of filesToRemove) {
           const filePath = `${mediaFolderPath}\\${post.mediaType}\\${fileToRemove}`;
           console.log(filePath);
@@ -164,6 +172,7 @@ router.patch(
         }
       }
 
+      // Mark the post as edited if there are changes
       if (req.body) {
         post.edited = true;
       }
@@ -174,12 +183,13 @@ router.patch(
   }),
 );
 
-// DELETE request to delete Post.
+// DELETE request to delete a Post by ID.
 router.delete(
   '/posts/:id',
-  auth,
-  parameterChecker,
-  utils.wrap(async (req: Request, res: Response) => {
+  auth, // Middleware for authentication
+  parameterChecker, // Middleware for checking parameters
+  wrap(async (req: Request, res: Response) => {
+    // Find the post by ID and delete it
     const post = await Post.findById(req.params['id']);
     await post?.deleteOne();
     return res.status(200).send();

@@ -10,11 +10,10 @@ import { connect } from './database/mongoose.js';
 
 import errorHandler from './middleware/errorHandler.js';
 
-import { dirName } from './utils/utils.js';
-
 import usersRouter from './routes/usersRoute.js';
 import postsRouter from './routes/postsRoute.js';
 import miscRouter from './routes/miscRoutes.js';
+import { dirName } from './utils/index.js';
 
 dotenv.config({
   path: path.join(

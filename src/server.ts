@@ -8,7 +8,7 @@ import app from './app.js';
 import * as http from 'http';
 import * as socketio from 'socket.io';
 import IP from 'ip';
-import { normalizePort } from './utils/utils.js';
+import { normalizePort } from './utils/generalUtils.js';
 
 /**
  * Get port from environment and store in Express.

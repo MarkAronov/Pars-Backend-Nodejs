@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-empty-function */
+
+// Import necessary modules and dependencies
 import mongoose, {
   CallbackWithoutResultAndOptionalError as NextFunction,
 } from 'mongoose';
@@ -7,62 +9,26 @@ import fs from 'fs';
 import path from 'path';
 import jwt, { Secret } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import uniqueValidator from 'mongoose-unique-validator'; // Plugin for unique field validation
 
-import uniqueValidator from 'mongoose-unique-validator';
-
+// Import models and utilities
 import { Post } from './postsModel.js';
-import * as utils from '../utils/utils.js';
+import {
+  IUser,
+  IUserMethods,
+  IUserVirtuals,
+  UserModel,
+  UserType,
+} from '../types/index.js'; // Custom types
+import {
+  ErrorAO,
+  dirName,
+  emailChecker,
+  passwordChecker,
+  usernameChecker,
+} from '../utils/index.js';
 
-import ErrorAO from '../utils/ErrorAO.js';
-import { PostType, UserType } from 'src/utils/types.js';
-
-export interface IUser {
-  username?: string;
-  displayName?: string;
-  email?: string;
-  password?: string;
-  bio?: string | null;
-  tokens?:
-    | {
-        token?: string | null;
-      }[]
-    | null;
-  avatar?: string | null;
-  backgroundImage?: string | null;
-  settings?: {
-    hideWhenMade?: boolean;
-    hidePosts?: boolean;
-  };
-  formerPasswords?: string[];
-  createdAt?: mongoose.Date;
-  updatedAt?: mongoose.Date;
-}
-
-export interface IUserVirtuals {
-  posts: PostType[];
-}
-
-export interface IUserMethods {
-  generateToken(): string;
-  toLimitedJSON(
-    limitLevel: number,
-  ): mongoose.HydratedDocument<IUser, IUserMethods & IUserVirtuals>;
-  verifyPassword(currentPassword: string): null;
-}
-
-export interface UserModel
-  extends mongoose.Model<IUser, {}, IUserMethods, IUserVirtuals> {
-  verifyCredentials(
-    email: string,
-    password: string,
-  ): Promise<
-    mongoose.HydratedDocument<
-      IUser & Required<{ _id: mongoose.Schema.Types.ObjectId }>,
-      IUserMethods & IUserVirtuals
-    >
-  >;
-}
-
+// Define schema options
 const schemaOptions: object = {
   toJSON: {
     virtuals: true,
@@ -74,6 +40,7 @@ const schemaOptions: object = {
   id: false,
 };
 
+// Define the user schema
 const UserSchema = new mongoose.Schema<
   IUser,
   UserModel,
@@ -82,6 +49,7 @@ const UserSchema = new mongoose.Schema<
   IUserVirtuals
 >(
   {
+    // Define user fields with type, constraints, and validation
     username: {
       type: String,
       unique: true,
@@ -90,11 +58,10 @@ const UserSchema = new mongoose.Schema<
       trim: true,
       async validate(value: string | undefined) {
         let usernameErrors: string[] = [];
-        usernameErrors = utils.usernameChecker(value);
+        usernameErrors = usernameChecker(value); // Custom validation for username
         if (usernameErrors.length !== 0)
           throw new ErrorAO(usernameErrors, 'Username error');
       },
-      es_indexed: true,
     },
     displayName: {
       type: String,
@@ -111,7 +78,7 @@ const UserSchema = new mongoose.Schema<
       trim: true,
       async validate(value: string | undefined) {
         let emailErrors = [];
-        emailErrors = utils.emailChecker(value);
+        emailErrors = emailChecker(value); // Custom validation for email
         if (emailErrors.length !== 0)
           throw new ErrorAO(emailErrors, 'Email error');
       },
@@ -122,7 +89,7 @@ const UserSchema = new mongoose.Schema<
       maxLength: 254,
       async validate(value: string | undefined) {
         let passwordErrorsList = [];
-        passwordErrorsList = utils.passwordChecker(value);
+        passwordErrorsList = passwordChecker(value); // Custom validation for password
         if (passwordErrorsList.length !== 0)
           throw new ErrorAO(passwordErrorsList, 'Password error');
       },
@@ -160,19 +127,22 @@ const UserSchema = new mongoose.Schema<
         default: false,
       },
     },
-    formerPasswords: [String],
+    formerPasswords: [String], // Stores hashed former passwords
   },
   schemaOptions,
 );
 
+// Index fields for full-text search
 UserSchema.index({ username: 'text', displayName: 'text' });
 
+// Define virtual property for user posts
 UserSchema.virtual('posts', {
   ref: 'Post',
   localField: '_id',
   foreignField: 'user',
 });
 
+// Method to generate JWT token for user authentication
 UserSchema.method(
   'generateToken',
   async function generateToken(this: UserType) {
@@ -180,21 +150,18 @@ UserSchema.method(
       { id: this._id.toString() },
       process?.env?.['JWT_STRING'] as Secret,
     );
-    this.tokens = this?.tokens?.concat({ token }) as {
-      token?: string;
-    }[];
+    this.tokens = this?.tokens?.concat({ token }) as { token?: string }[];
     await this.save();
     return token;
   },
 );
 
+// Method to limit user data for JSON response
 UserSchema.method(
   'toLimitedJSON',
   function toLimitedJSON(this: UserType, limitLevel: number) {
     const userObject: UserType = this.toObject({ virtuals: true });
-    if (userObject.settings?.hideWhenMade) {
-      delete userObject.createdAt;
-    }
+    if (userObject.settings?.hideWhenMade) delete userObject.createdAt;
     delete userObject.password;
     delete userObject.formerPasswords;
     delete userObject.__v;
@@ -213,41 +180,39 @@ UserSchema.method(
   },
 );
 
+// Method to verify user password
 UserSchema.method(
   'verifyPassword',
-  // eslint-disable-next-line prefer-arrow-callback
   async function verifyPassword(password: string) {
     const match = await bcrypt.compare(password, this.password as string);
-    if (!match) {
+    if (!match)
       throw new ErrorAO(
         { password: ['Incorrect password.'] },
         'VerificationError',
       );
-    }
     return;
   },
 );
 
+// Static method to verify user credentials
 UserSchema.static(
   'verifyCredentials',
-  // eslint-disable-next-line prefer-arrow-callback
-  async function verifyCredentials(email: string, password: string) {
+  async (email: string, password: string) => {
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user)
       throw new ErrorAO({ email: ['Invalid email.'] }, 'VerificationError');
-    }
 
     const match = await bcrypt.compare(password, user.password as string);
-    if (!match) {
+    if (!match)
       throw new ErrorAO(
         { password: ['Incorrect password.'] },
         'VerificationError',
       );
-    }
     return user;
   },
 );
 
+// Middleware to handle pre-delete operations
 UserSchema.pre(
   'deleteOne',
   { document: true, query: false },
@@ -257,20 +222,19 @@ UserSchema.pre(
       const post = await Post.findById(postID);
       await post?.deleteOne();
     }
-    const fileFolderPath = path.join(utils.dirName(), '../../media/');
-    if (this.avatar) {
+    const fileFolderPath = path.join(dirName(), '../../media/');
+    if (this.avatar)
       await fs.rm(`${fileFolderPath}/avatars/${this.avatar}`, () => {});
-    }
-    if (this.backgroundImage) {
+    if (this.backgroundImage)
       await fs.rm(
         `${fileFolderPath}/backgroundImages/${this.backgroundImage}`,
         () => {},
       );
-    }
     next();
   },
 );
 
+// Middleware to handle pre-save operations
 UserSchema.pre(
   'save',
   async function preSave(this: UserType, next: NextFunction) {
@@ -283,8 +247,9 @@ UserSchema.pre(
   },
 );
 
+// Apply uniqueValidator plugin
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 UserSchema.plugin(uniqueValidator as any, { message: 'dupe' });
 
-// Export model
+// Export the user model
 export const User = mongoose.model<IUser, UserModel>('User', UserSchema);

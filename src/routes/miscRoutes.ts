@@ -4,9 +4,8 @@ import { fileTypeFromFile } from 'file-type';
 
 import { Post } from '../models/postsModel.js';
 import { User } from '../models/usersModel.js';
-import { UserType, PostType } from 'src/utils/types.js';
-import * as utils from '../utils/utils.js';
-import { Request } from 'src/utils/types.js';
+import { Request, UserType, PostType } from '../types/index.js';
+import { dirName, wrap } from '../utils/index.js';
 
 const router = express.Router();
 /// OTHER NEEDED ROUTES ///
@@ -54,9 +53,9 @@ router.get('/search', async (req, res) => {
 
 router.get(
   '/media/:mediatype/:mediafile',
-  utils.wrap(async (req: Request, res: Response) => {
+  wrap(async (req: Request, res: Response) => {
     const filePath = path.join(
-      utils.dirName(),
+      dirName(),
       `..\\..\\media\\${req.params['mediatype']}\\${req.params['mediafile']}`,
     );
     const meta = await fileTypeFromFile(filePath);

@@ -74,5 +74,9 @@
   "ts-node": {
     "esm": true,
     "swc": true
-  }
+  },
+  "baseUrl": ".",
+    "paths": {
+      "src/*": ["./src/*"]
+    }
 }
