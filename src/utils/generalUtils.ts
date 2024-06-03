@@ -24,7 +24,8 @@ export const normalizePort = (val: string): boolean | string | number => {
  * @returns {Function} The wrapped function.
  */
 export const wrap =
-  (fn: any) =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (...args: any) =>
-    fn(...args).catch(args[2]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, prettier/prettier
+    (fn: any) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (...args: any) =>
+      fn(...args).catch(args[2]);

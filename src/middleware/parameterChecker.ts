@@ -1,156 +1,320 @@
 import { fileTypeFromFile } from 'file-type';
+import bcrypt from 'bcryptjs';
 import _ from 'lodash';
-
 import { Post } from '../models/postsModel.js';
 import { User } from '../models/usersModel.js';
-import { AllowedMediaTypesKeys, Request } from '../types/index.js';
-import { Response } from 'express';
 import {
-  ErrorAO,
+  AllowedMediaTypesKeys,
+  IPost,
+  IUser,
+  Request,
+} from '../types/index.js';
+import { Response, NextFunction } from 'express';
+import {
   requestMap,
   requestedUserGETFields,
   requestedUserDELETEFields,
   allowedFileTypes,
   allowedMediaTypes,
+  ErrorAO,
+  filterDupes,
   wrap,
 } from '../utils/index.js';
 
-const getRouteConfig = (method: string, path: string) => {
-  const methodRoutes = requestMap[method];
-  if (!methodRoutes) {
-    throw new ErrorAO(
-      { MAIN: ['Unsupported request method'] },
-      'RequestError',
-      400,
-    );
-  }
+/**
+ * Middleware to check the parameters and files in the request.
+ * Ensures that the required parameters are present, unwanted parameters are not included,
+ * the parameters are valid, and the files are of allowed types.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - The next middleware function.
+ */
+const parameterChecker = wrap(
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async (req: Request, res: Response, next: NextFunction) => {
+    const reqKeys = [
+      ...(req.body ? Object.keys(req.body) : []),
+      ...(req.files ? Object.keys(req.files) : []),
+    ];
+    const reqMethod: string | undefined = req.method;
+    const routePath: string | undefined = req.route?.path;
 
-  const routeConfig = methodRoutes[path];
-  if (!routeConfig) {
-    throw new ErrorAO({ MAIN: ['Unknown route path'] }, 'RequestError', 404);
-  }
+    // Validate request method and route path
+    if (!reqMethod || !routePath) {
+      throw new ErrorAO({ MAIN: ['Malformed request'] }, 'RequestError', 500);
+    }
 
-  return routeConfig;
-};
-
-const validateUserPermissions = async (req: Request) => {
-  const { method, params, user: currentUser } = req;
-  const isUserRequest = req.route?.path.includes('/users');
-
-  if (isUserRequest && params['username']) {
-    const user = await User.findOne({ username: params['username'] });
-    if (!user) {
+    const methodRoutes = requestMap[reqMethod];
+    if (!methodRoutes) {
       throw new ErrorAO(
-        { MAIN: [`No user with the username: ${params['username']}`] },
-        'ParameterError',
-        404,
+        { MAIN: ['Unsupported request method'] },
+        'RequestError',
+        400,
       );
     }
 
-    if (currentUser && !user._id.equals(currentUser._id) && method !== 'GET') {
+    const routeConfig = methodRoutes[routePath];
+    if (!routeConfig) {
+      throw new ErrorAO({ MAIN: ['Unknown route path'] }, 'RequestError', 404);
+    }
+
+    const { requiredParams, optionalParams } = routeConfig;
+    const parameterFreeRequest =
+      (!requiredParams.length && !optionalParams.length) || reqMethod === 'GET';
+
+    const isPostRequest = routePath.indexOf('/posts') >= 0;
+    const isUserRequest = routePath.indexOf('/users') >= 0;
+
+    let dupeFlag = false;
+    const errorArray: { [key: string]: string[] } = {};
+
+    const currentUser = req.user;
+    let user, post;
+
+    // Validate user for user-related requests
+    if (isUserRequest) {
+      try {
+        user = await User.findOne({ username: req.params['username'] });
+      } catch (err) {
+        throw new ErrorAO(
+          { MAIN: ['Invalid Username'] },
+          'ParameterError',
+          403,
+        );
+      }
+    }
+
+    // Validate post for post-related requests
+    if (isPostRequest) {
+      try {
+        post = await Post.findById(req.params['id']);
+      } catch (err) {
+        throw new ErrorAO({ MAIN: ['Invalid Post ID'] }, 'ParameterError', 403);
+      }
+    }
+
+    // Check permissions for user-related requests
+    if (isUserRequest && req.params['username']) {
+      if (!user) {
+        throw new ErrorAO(
+          {
+            MAIN: [
+              `There's no user with the username: ${req.params['username']}`,
+            ],
+          },
+          'ParameterError',
+          404,
+        );
+      }
+      if (
+        currentUser &&
+        !user._id.equals(currentUser._id) &&
+        reqMethod !== 'GET'
+      ) {
+        throw new ErrorAO(
+          {
+            MAIN: ['You are not allowed to change/delete this user'],
+          },
+          'ParameterError',
+          403,
+        );
+      }
+    }
+
+    // Check permissions for post-related requests
+    if (isPostRequest && req.params['id']) {
+      if (!post) {
+        throw new ErrorAO(
+          {
+            MAIN: [`No post by that ID: ${req.params['id']}`],
+          },
+          'ParameterError',
+          404,
+        );
+      }
+      if (
+        currentUser &&
+        !post.user._id.equals(currentUser._id) &&
+        reqMethod !== 'GET'
+      ) {
+        throw new ErrorAO(
+          {
+            MAIN: ['You are not allowed to change/delete this post'],
+          },
+          'ParameterError',
+          403,
+        );
+      }
+    }
+
+    // Check for unwanted parameters
+    if (
+      !reqKeys.every(
+        (key) => requiredParams.includes(key) || optionalParams.includes(key),
+      ) ||
+      (reqMethod === 'GET' &&
+        req.body.requestedFields &&
+        !req.body.requestedFields.every((key: string) =>
+          requestedUserGETFields.includes(key),
+        )) ||
+      (reqMethod === 'DELETE' &&
+        req.body.requestedFields &&
+        !req.body.requestedFields.every((key: string) =>
+          requestedUserDELETEFields.includes(key),
+        ))
+    ) {
       throw new ErrorAO(
-        { MAIN: ['You are not allowed to change/delete this user'] },
+        {
+          MAIN: ['Invalid request, got invalid parameters'],
+        },
         'ParameterError',
-        403,
       );
     }
-  }
-};
 
-const validatePostPermissions = async (req: Request) => {
-  const { method, params, user: currentUser } = req;
-  const isPostRequest = req.route?.path.includes('/posts');
-
-  if (isPostRequest && params['id']) {
-    const post = await Post.findById(params['id']);
-    if (!post) {
+    // Check for missing parameters
+    if (!reqKeys.length && !parameterFreeRequest) {
       throw new ErrorAO(
-        { MAIN: [`No post with ID: ${params['id']}`] },
+        {
+          MAIN: [
+            `Missing all required parameters${
+              requiredParams.length
+                ? ' (' + requiredParams.join(', ') + ')'
+                : ''
+            }.`,
+          ],
+        },
         'ParameterError',
-        404,
       );
     }
 
     if (
-      currentUser &&
-      !post.user._id.equals(currentUser._id) &&
-      method !== 'GET'
+      optionalParams.length &&
+      optionalParams.every((key) => !reqKeys.includes(key)) &&
+      reqMethod === 'PATCH'
     ) {
-      throw new ErrorAO(
-        { MAIN: ['You are not allowed to change/delete this post'] },
-        'ParameterError',
-        403,
-      );
+      errorArray['MAIN'] = [
+        `Missing one of the following optional parameters: ${optionalParams.join(
+          ', ',
+        )}`,
+      ];
     }
-  }
-};
 
-const validateParameters = (
-  req: Request,
-  requiredParams: string[],
-  optionalParams: string[],
-) => {
-  const reqKeys = [
-    ...(req.body ? Object.keys(req.body) : []),
-    ...(req.files ? Object.keys(req.files) : []),
-  ];
+    for (const reqParam of requiredParams) {
+      if (!reqKeys.includes(reqParam)) {
+        errorArray[reqParam] = [`${reqParam} is missing and it's needed`];
+      }
+    }
 
-  if (
-    !reqKeys.every(
-      (key) => requiredParams.includes(key) || optionalParams.includes(key),
-    ) ||
-    (req.method === 'GET' &&
-      req.body.requestedFields &&
-      !req.body.requestedFields.every((key: string) =>
-        requestedUserGETFields.includes(key),
-      )) ||
-    (req.method === 'DELETE' &&
-      req.body.requestedFields &&
-      !req.body.requestedFields.every((key: string) =>
-        requestedUserDELETEFields.includes(key),
-      ))
-  ) {
-    throw new ErrorAO(
-      { MAIN: ['Invalid request, got invalid parameters'] },
-      'ParameterError',
-    );
-  }
+    // Check for duplicate files in the request
+    if (
+      req.files !== undefined &&
+      isPostRequest &&
+      ((Object.keys(req.files).length > 1) as boolean)
+    ) {
+      dupeFlag = true;
+      errorArray['media'] = [
+        'Either upload a set of images, a set of files or a single video',
+      ];
+    }
 
-  if (!reqKeys.length && (requiredParams.length || optionalParams.length)) {
-    throw new ErrorAO(
-      {
-        MAIN: [
-          `Missing all required parameters${
-            requiredParams.length ? ' (' + requiredParams.join(', ') + ')' : ''
-          }.`,
-        ],
-      },
-      'ParameterError',
-    );
-  }
-};
+    // Validate patch requests
+    if (reqMethod === 'PATCH') {
+      for (const reqKey of reqKeys) {
+        const errorKey: string = (reqKey.charAt(0).toUpperCase() +
+          reqKey.slice(1)) as string;
 
-const validateFiles = async (req: Request) => {
-  const errorArray: { [key: string]: string[] } = {};
-  const isPostRequest = req.route?.path.includes('/posts');
-  const isUserRequest = req.route?.path.includes('/users');
+        if (
+          reqKey === 'filesToRemove' &&
+          isPostRequest &&
+          req.files !== undefined &&
+          Object.keys(req.files).length
+        ) {
+          const filesToRemove = filterDupes(req.body.filesToRemove.slice());
+          const mediaType = Object.keys(req.files)[0];
 
-  if (req.files && Object.keys(req.files).length) {
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const mediaType = Object.keys(req.files)[0] as string;
-    const mediaFiles = files[mediaType];
-    const allowedType = allowedFileTypes[mediaType as AllowedMediaTypesKeys];
+          if (
+            !dupeFlag &&
+            !post?.media.every((file) => filesToRemove.includes(file)) &&
+            mediaType !== post?.mediaType
+          ) {
+            const errMsg =
+              "You can't have multiple media types in the same post";
+            errorArray['media'] = errorArray['media']
+              ? errorArray['media'].concat([errMsg])
+              : [errMsg];
+          }
+        }
 
-    if (mediaFiles) {
-      for (const file of mediaFiles) {
-        const meta = await fileTypeFromFile(file.path);
-        if (!allowedType.includes(meta?.ext as string)) {
-          errorArray['media'] = [
-            `${mediaType} must only have files with the following formats: ${allowedType.join(
-              ', ',
-            )}.`,
+        if (currentUser !== undefined && reqKey === 'newPassword') {
+          const formerPasses = currentUser.formerPasswords;
+          if (formerPasses) {
+            for (const formerPass of formerPasses) {
+              if (await bcrypt.compare(req.body[reqKey], formerPass)) {
+                errorArray['password'] = [
+                  'Password was formally used, use another.',
+                ];
+              }
+            }
+          }
+        }
+
+        if (
+          (currentUser &&
+            isUserRequest &&
+            _.isEqual(
+              currentUser[reqKey as keyof IUser] ?? '',
+              req.body[reqKey],
+            )) ||
+          (post &&
+            isPostRequest &&
+            _.isEqual(post[reqKey as keyof IPost] ?? '', req.body[reqKey]))
+        ) {
+          errorArray[reqKey] = [
+            `${errorKey} has the same value as what's currently stored, try another.`,
           ];
-          break;
+        }
+      }
+    }
+
+    // Validate uploaded files
+    if (reqMethod === 'POST' || reqMethod === 'PATCH') {
+      if (
+        Object.keys(req.body).some((param) => allowedMediaTypes.includes(param))
+      ) {
+        if (isUserRequest) {
+          errorArray['media'] = [
+            'Either upload an avatar or/and a background image.',
+          ];
+        }
+        if (isPostRequest) {
+          errorArray['media'] = [
+            'Either upload a set of images, a set of files or a single video.',
+          ];
+        }
+      }
+
+      if (req.files && Object.keys(req.files).length) {
+        const files = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+        const mediaType = Object.keys(req.files)[0] as string;
+        const mediaFiles = files[mediaType] as Express.Multer.File[];
+        const allowedType = allowedFileTypes[
+          mediaType as AllowedMediaTypesKeys
+        ] as string[];
+        for (const file of mediaFiles) {
+          const meta = await fileTypeFromFile(file.path);
+          if (!allowedType.includes(meta?.ext as string)) {
+            errorArray['media'] = [
+              `${mediaType} must only have files with the following formats: ${allowedType.join(
+                ', ',
+              )}.`,
+            ];
+            break;
+          }
         }
       }
     }
@@ -158,50 +322,6 @@ const validateFiles = async (req: Request) => {
     if (Object.keys(errorArray).length) {
       throw new ErrorAO(errorArray, 'ParameterError');
     }
-  }
-
-  if (
-    (isUserRequest || isPostRequest) &&
-    Object.keys(req.body).some((param) => allowedMediaTypes.includes(param))
-  ) {
-    if (isUserRequest) {
-      throw new ErrorAO(
-        { media: ['Either upload an avatar or/and a background image.'] },
-        'ParameterError',
-      );
-    }
-    if (isPostRequest) {
-      throw new ErrorAO(
-        {
-          media: [
-            'Either upload a set of images, a set of files or a single video.',
-          ],
-        },
-        'ParameterError',
-      );
-    }
-  }
-};
-
-const parameterChecker = wrap(
-  async (req: Request, res: Response, next: () => void) => {
-    const routePath = req.route?.path;
-    const method = req.method;
-
-    if (!method || !routePath) {
-      throw new ErrorAO({ MAIN: ['Malformed request'] }, 'RequestError', 500);
-    }
-
-    const { requiredParams, optionalParams } = getRouteConfig(
-      method,
-      routePath,
-    );
-
-    await validateUserPermissions(req);
-    await validatePostPermissions(req);
-    validateParameters(req, requiredParams, optionalParams);
-    await validateFiles(req);
-
     next();
   },
 );
