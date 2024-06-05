@@ -8,11 +8,16 @@ import dotenv from 'dotenv';
 
 import { connect } from './database/mongoose.js';
 
-import errorHandler from './middleware/errorHandler.js';
+import { errorHandlerMiddleware } from './middleware/index.js';
 
-import usersRouter from './routes/usersRoute.js';
-import postsRouter from './routes/postsRoute.js';
-import miscRouter from './routes/miscRoutes.js';
+import {
+  usersRoutes,
+  postsRoutes,
+  topicRoutes,
+  threadRoutes,
+  miscRoutes,
+} from './routes/index.js';
+
 import { dirName } from './utils/index.js';
 
 dotenv.config({
@@ -34,9 +39,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(dirName(), 'public')));
 
-app.use(usersRouter, postsRouter, miscRouter);
+app.use(usersRoutes, topicRoutes, threadRoutes, postsRoutes, miscRoutes);
 
-app.use(errorHandler);
+app.use(errorHandlerMiddleware);
 
 console.clear();
 export default app;

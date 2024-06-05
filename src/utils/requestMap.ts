@@ -31,6 +31,7 @@ export const requestMap: ParameterList = {
     '/users/logout': createParams([]),
     '/users/logoutall': createParams([]),
     '/posts': createParams(['title'], postParams),
+    '/thread': createParams(['title'], postParams),
   },
   GET: {
     '/users': createParams([], ['requestedFields']),
@@ -38,6 +39,8 @@ export const requestMap: ParameterList = {
     '/users/u/:username': createParams([], ['requestedFields']),
     '/posts': createParams([]),
     '/posts/:id': createParams([]),
+    '/thread/:id': createParams([]),
+    '/topic/:name': createParams([]),
   },
   PATCH: {
     '/users/self/password': createParams(['currentPassword', 'newPassword']),
@@ -49,6 +52,8 @@ export const requestMap: ParameterList = {
     '/users/self': createParams([]),
     '/users/self/partial': createParams(['requestedFields']),
     '/posts/:id': createParams([]),
+    '/thread/:id': createParams([]),
+    '/topic/:name': createParams([]),
   },
 };
 

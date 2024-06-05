@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
-import { PostType, ThreadType } from 'src/types';
+import { PostType, ThreadType, UserType } from 'src/types';
 
 export interface IThread {
-  board: mongoose.Types.ObjectId;
-  openingPost: mongoose.Types.ObjectId;
+  topic: mongoose.Types.ObjectId;
+  openingPoster: UserType;
+  posts: PostType[];
 }
 
 export interface IThreadVirtuals {
@@ -25,18 +26,16 @@ const schemaOptions: object = {
 
 const ThreadSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
+    topic: {
+      type: mongoose.Types.ObjectId,
       required: true,
-      maxLength: 254,
-      trim: true,
     },
-    content: {
-      type: String,
+    openingPoster: {
+      type: mongoose.Schema.Types.ObjectId,
       required: false,
       trim: true,
     },
-    user: {
+    posts: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -57,20 +56,6 @@ const ThreadSchema = new mongoose.Schema(
   },
   schemaOptions,
 );
-
-ThreadSchema.index({ title: 'text' });
-
-ThreadSchema.virtual('mentioningChildren', {
-  ref: 'Thread',
-  localField: '_id',
-  foreignField: 'mentionedParents',
-});
-
-ThreadSchema.method('toCustomJSON', async function toCustomJSON() {
-  await this.populate('mentioningChildren');
-  const threadObject = await this.toObject({ virtuals: true });
-  return threadObject;
-});
 
 ThreadSchema.pre(
   'deleteOne',

@@ -16,7 +16,7 @@ import {
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The next middleware function (unused).
  */
-const errorHandler = async (
+export const errorHandlerMiddleware = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   err: any,
   req: Request,
@@ -73,5 +73,3 @@ const errorHandler = async (
     return res.status(500).send(err.toString());
   }
 };
-
-export default errorHandler;

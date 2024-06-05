@@ -7,25 +7,27 @@ import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
 import { Post } from '../models/postsModel.js';
-import auth from '../middleware/auth.js';
-import jsonParser from '../middleware/jsonParser.js';
-import { postMulter } from '../middleware/multer.js';
-import parameterChecker from '../middleware/parameterChecker.js';
+import {
+  authMiddleware,
+  jsonParserMiddleware,
+  postMulter,
+  requestCheckerMiddleware,
+} from '../middleware/index.js';
 import { PostType, Request } from '../types/index.js';
 import { dirName, filterDupes, wrap } from '../utils/index.js';
 
 // Create a new express router
-const router = express.Router();
+export const postsRoutes = express.Router();
 
 /// POST ROUTES ///
 
 // POST request for creating a new Post.
-router.post(
+postsRoutes.post(
   '/posts',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   postMulter, // Middleware for handling file uploads
-  jsonParser, // Middleware for parsing JSON data
-  parameterChecker, // Middleware for checking parameters
+  jsonParserMiddleware, // Middleware for parsing JSON data
+  requestCheckerMiddleware, // Middleware for checking parameters
   wrap(async (req: Request, res: Response) => {
     // Create a new Post instance with the request body and user ID
     const post = new Post({ ...req.body, user: req?.user?._id }) as PostType;
@@ -74,7 +76,7 @@ router.post(
 );
 
 // GET request for list of all Post items.
-router.get(
+postsRoutes.get(
   '/posts',
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -87,7 +89,7 @@ router.get(
 );
 
 // GET request for a specific Post by ID.
-router.get(
+postsRoutes.get(
   '/posts/:id',
   wrap(async (req: Request, res: Response) => {
     // Fetch the post by ID and return the full post data
@@ -98,12 +100,12 @@ router.get(
 );
 
 // PATCH request to update a Post by ID.
-router.patch(
+postsRoutes.patch(
   '/posts/:id',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   postMulter, // Middleware for handling file uploads
-  jsonParser, // Middleware for parsing JSON data
-  parameterChecker, // Middleware for checking parameters
+  jsonParserMiddleware, // Middleware for parsing JSON data
+  requestCheckerMiddleware, // Middleware for checking parameters
   wrap(async (req: Request, res: Response) => {
     // Fetch the post by ID and update its fields
     const post = (await Post.findById(req.params['id'])) as PostType;
@@ -184,10 +186,10 @@ router.patch(
 );
 
 // DELETE request to delete a Post by ID.
-router.delete(
+postsRoutes.delete(
   '/posts/:id',
-  auth, // Middleware for authentication
-  parameterChecker, // Middleware for checking parameters
+  authMiddleware, // Middleware for authentication
+  requestCheckerMiddleware, // Middleware for checking parameters
   wrap(async (req: Request, res: Response) => {
     // Find the post by ID and delete it
     const post = await Post.findById(req.params['id']);
@@ -195,5 +197,3 @@ router.delete(
     return res.status(200).send();
   }),
 );
-
-export default router;

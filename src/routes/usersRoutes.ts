@@ -5,10 +5,12 @@ import { fileTypeFromFile } from 'file-type';
 import fs from 'fs';
 
 import { User } from '../models/usersModel.js';
-import auth from '../middleware/auth.js';
-import jsonParser from '../middleware/jsonParser.js';
-import { userMulter } from '../middleware/multer.js';
-import parameterChecker from '../middleware/parameterChecker.js';
+import {
+  authMiddleware,
+  jsonParserMiddleware,
+  userMulter,
+  requestCheckerMiddleware,
+} from '../middleware/index.js';
 
 import { ErrorAO, dirName, wrap } from '../utils/index.js';
 import {
@@ -21,16 +23,16 @@ import {
 } from '../types/index.js';
 
 // Create a new express router
-const router = express.Router();
+export const usersRoutes = express.Router();
 
 // / USER ROUTES ///
 
 // POST request for creating a new User.
-router.post(
+usersRoutes.post(
   '/users',
   userMulter, // Middleware for handling file uploads
-  jsonParser, // Middleware for parsing JSON data
-  parameterChecker, // Middleware for checking parameters
+  jsonParserMiddleware, // Middleware for parsing JSON data
+  requestCheckerMiddleware, // Middleware for checking parameters
   wrap(async (req: Request, res: Response) => {
     const userData = req.body;
     userData.displayName = req.body.displayName || req.body.username;
@@ -75,11 +77,11 @@ router.post(
 );
 
 // POST request for logging the user in.
-router.post(
+usersRoutes.post(
   '/users/login',
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     const userToLimit = await User.verifyCredentials(
       req.body.email,
@@ -94,12 +96,12 @@ router.post(
 );
 
 // POST request for logging the user out.
-router.post(
+usersRoutes.post(
   '/users/logout',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     if (req.user) {
       req.user.tokens = req.user.tokens?.filter(
@@ -114,9 +116,9 @@ router.post(
 );
 
 // POST request for logging the user out from all sessions.
-router.post(
+usersRoutes.post(
   '/users/self/logoutall',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   wrap(async (req: Request, res: Response) => {
     if (req.user) {
       req.user.tokens = [];
@@ -127,12 +129,12 @@ router.post(
 );
 
 // GET request for list of all Users.
-router.get(
+usersRoutes.get(
   '/users',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,12 +148,12 @@ router.get(
 );
 
 // GET request for the authenticated User's details.
-router.get(
+usersRoutes.get(
   '/users/self',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   async (req: Request, res: Response) => {
     let trimmedUser: Partial<UserType> = {};
     if (req.user) {
@@ -173,12 +175,12 @@ router.get(
 );
 
 // GET request for one User by username.
-router.get(
+usersRoutes.get(
   '/users/u/:username',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     const user = await User.findOne({ username: req.params['username'] });
     if (!user) {
@@ -198,12 +200,12 @@ router.get(
 );
 
 // PATCH request to update User's password.
-router.patch(
+usersRoutes.patch(
   '/users/self/password',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     if (req.user) {
       await req.user.verifyPassword(req.body.currentPassword);
@@ -217,12 +219,12 @@ router.patch(
 );
 
 // PATCH request to update important User details.
-router.patch(
+usersRoutes.patch(
   '/users/self/important',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     if (req.user) {
       await req.user.verifyPassword(req.body.password);
@@ -242,12 +244,12 @@ router.patch(
 );
 
 // PATCH request to update regular User details.
-router.patch(
+usersRoutes.patch(
   '/users/self/regular',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     const userData = req.body;
     const reqKeys = Object.keys(userData);
@@ -305,9 +307,9 @@ router.patch(
 );
 
 // DELETE request to delete the authenticated User.
-router.delete(
+usersRoutes.delete(
   '/users/self',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   wrap(async (req: Request, res: Response) => {
     await req?.user?.deleteOne();
     return res.status(200).send();
@@ -315,12 +317,12 @@ router.delete(
 );
 
 // DELETE request to partially delete User objects.
-router.delete(
+usersRoutes.delete(
   '/users/self/partial',
-  auth, // Middleware for authentication
+  authMiddleware, // Middleware for authentication
   userMulter,
-  jsonParser,
-  parameterChecker,
+  jsonParserMiddleware,
+  requestCheckerMiddleware,
   wrap(async (req: Request, res: Response) => {
     if (req.user && req.body.requestedFields) {
       const userKeys = Object.keys(req.user.toLimitedJSON(0));
@@ -347,5 +349,3 @@ router.delete(
     return res.status(200).send();
   }),
 );
-
-export default router;

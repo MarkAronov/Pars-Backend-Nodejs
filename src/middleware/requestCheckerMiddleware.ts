@@ -30,7 +30,7 @@ import {
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The next middleware function.
  */
-const parameterChecker = wrap(
+export const requestCheckerMiddleware = wrap(
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -325,5 +325,3 @@ const parameterChecker = wrap(
     next();
   },
 );
-
-export default parameterChecker;

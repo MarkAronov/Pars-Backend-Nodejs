@@ -12,10 +12,15 @@ import { ErrorAO } from '../utils/index.js';
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The next middleware function.
  */
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const jsonParser = (req: Request, res: Response, next: NextFunction) => {
+
+export const jsonParserMiddleware = (
+  req: Request,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  res: Response,
+  next: NextFunction,
+) => {
   if (req.body && Object.keys(req.body).includes('content')) {
     try {
       const reqJSONContent =
@@ -34,5 +39,3 @@ const jsonParser = (req: Request, res: Response, next: NextFunction) => {
   }
   next();
 };
-
-export default jsonParser;

@@ -8,7 +8,7 @@ import { ErrorAO, wrap } from '../utils/index.js';
  * Middleware function for authenticating a user via a JWT token.
  * Throws an authentication error if the token is missing, invalid, or if the user is not found.
  */
-const auth = wrap(
+export const authMiddleware = wrap(
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   async (req: Request, res: Response, next: NextFunction) => {
@@ -66,5 +66,3 @@ const auth = wrap(
     next();
   },
 );
-
-export default auth;

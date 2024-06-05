@@ -7,10 +7,10 @@ import { User } from '../models/usersModel.js';
 import { Request, UserType, PostType } from '../types/index.js';
 import { dirName, wrap } from '../utils/index.js';
 
-const router = express.Router();
+export const miscRoutes = express.Router();
 /// OTHER NEEDED ROUTES ///
 // GET request for finding posts/users
-router.get('/search', async (req, res) => {
+miscRoutes.get('/search', async (req, res) => {
   const results: { users: UserType[]; posts: PostType[] } = {
     users: [],
     posts: [],
@@ -51,7 +51,7 @@ router.get('/search', async (req, res) => {
   return res.status(200).send(results);
 });
 
-router.get(
+miscRoutes.get(
   '/media/:mediatype/:mediafile',
   wrap(async (req: Request, res: Response) => {
     const filePath = path.join(
@@ -66,5 +66,3 @@ router.get(
     }
   }),
 );
-
-export default router;
