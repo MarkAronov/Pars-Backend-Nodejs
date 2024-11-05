@@ -1,35 +1,28 @@
-import mongoose, { HydratedDocument } from 'mongoose';
+import type { HydratedDocument, Model, Types } from "mongoose";
 
 // Post Related Types
 export interface IPost {
-  title: string;
-  content: string;
-  topic: mongoose.Types.ObjectId;
-  thread: mongoose.Types.ObjectId;
-  user: mongoose.Types.ObjectId;
-  mentionedParents: mongoose.Types.ObjectId[];
-  media: string[];
-  mediaType: string | null;
-  edited: boolean;
+	title: string;
+	content: string;
+	topic: Types.ObjectId;
+	thread: Types.ObjectId;
+	user: Types.ObjectId;
+	mentionedParents: Types.ObjectId[];
+	media: string[];
+	mediaType: string | null;
+	edited: boolean;
 }
 
 export interface IPostVirtuals {
-  mentioningChildren: mongoose.Types.ObjectId[];
+	mentioningChildren: Types.ObjectId[];
 }
 
 export interface IPostMethods {
-  generateToken(): string;
-  toCustomJSON(): mongoose.HydratedDocument<
-    IPost,
-    IPostMethods & IPostVirtuals
-  >;
-  verifyPassword(currentPassword: string): null;
+	generateToken(): string;
+	toCustomJSON(): HydratedDocument<IPost, IPostMethods & IPostVirtuals>;
+	verifyPassword(currentPassword: string): null;
 }
 
-export type PostModel = mongoose.Model<
-  IPost,
-  object,
-  IPostMethods & IPostVirtuals
->;
+export type PostModel = Model<IPost, object, IPostMethods & IPostVirtuals>;
 
 export type PostType = HydratedDocument<IPost, IPostMethods & IPostVirtuals>;

@@ -1,10 +1,11 @@
-import { NextFunction, Response } from 'express';
-import { Request } from '../types/index.js';
+import type { NextFunction, Response } from "express";
+import type { MulterError } from "multer";
+import type { Request, ValidationError } from "../types";
 import {
-  multerErrorComposer,
-  removeFiles,
-  validationErrorComposer,
-} from '../utils/index.js';
+	multerErrorComposer,
+	removeFiles,
+	validationErrorComposer,
+} from "../utils";
 
 /**
  * Error-handling middleware for Express applications.
@@ -17,59 +18,56 @@ import {
  * @param {NextFunction} next - The next middleware function (unused).
  */
 export const errorHandlerMiddleware = async (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  err: any,
-  req: Request,
-  res: Response,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction,
+	err: Error & { status?: number; errorAO?: unknown; name: string },
+	req: Request,
+	res: Response,
+	next: NextFunction,
 ) => {
-  const preComposedErrors = [
-    'AuthenticationError',
-    'ParameterError',
-    'VerificationError',
-  ];
+	const preComposedErrors = [
+		"AuthenticationError",
+		"ParameterError",
+		"VerificationError",
+	];
 
-  const urlsThatUploadFiles = [
-    '/users',
-    '/users/self/regular',
-    '/posts',
-    '/posts/:id',
-  ];
+	const urlsThatUploadFiles = [
+		"/user",
+		"/user/self/regular",
+		"/post",
+		"/post/:id",
+	];
 
-  console.log(err);
+	// Handle requests for non-existent media files
+	if (req.route.path === "/media/:mediatype/:mediafile") {
+		return res.status(404).send({
+			media: "file does not exist",
+		});
+	}
 
-  // Handle requests for non-existent media files
-  if (req.route.path === '/media/:mediatype/:mediafile') {
-    return res.status(404).send({
-      media: 'file does not exist',
-    });
-  }
+	// Remove uploaded files if the request fails and involves file uploads
+	if (
+		urlsThatUploadFiles.includes(req.route.path) &&
+		(req.method === "POST" || req.method === "PATCH")
+	) {
+		await removeFiles(req);
+	}
 
-  // Remove uploaded files if the request fails and involves file uploads
-  if (
-    urlsThatUploadFiles.includes(req.route.path) &&
-    (req.method === 'POST' || req.method === 'PATCH')
-  ) {
-    await removeFiles(req);
-  }
-
-  // Handle validation errors
-  if (err.name === 'ValidationError') {
-    return res.status(400).send({ ERROR: validationErrorComposer(err) });
-  }
-  // Handle Multer errors
-  else if (err.name === 'MulterError') {
-    return res.status(400).send(multerErrorComposer(err));
-  }
-  // Handle pre-composed errors
-  else if (preComposedErrors.includes(err.name)) {
-    return res.status(err.status).send(err.errorAO);
-  }
-  // Handle generic server errors
-  else {
-    return res.status(500).send(err.toString());
-  }
+	// Handle validation errors
+	if (err.name === "ValidationError") {
+		return res.status(400).send({
+			ERROR: validationErrorComposer(err as unknown as ValidationError),
+		});
+	}
+	if (err.name === "SearchError") {
+		return res.status(404).send();
+	}
+	// Handle Multer errors
+	if (err.name === "MulterError") {
+		return res.status(400).send(multerErrorComposer(err as MulterError));
+	}
+	// Handle pre-composed errors
+	if (preComposedErrors.includes(err.name)) {
+		return res.status(err.status || 500).send({ ERROR: err.errorAO });
+	}
+	// Handle generic server errors
+	return res.status(500).send(err.toString());
 };

@@ -4,17 +4,17 @@
  * @returns {boolean | string | number} The normalized port value.
  */
 export const normalizePort = (val: string): boolean | string | number => {
-  const port = parseInt(val, 10);
+	const port = Number.parseInt(val, 10);
 
-  if (isNaN(port)) {
-    return val;
-  }
+	if (Number.isNaN(port)) {
+		return val;
+	}
 
-  if (port >= 0) {
-    return port;
-  }
+	if (port >= 0) {
+		return port;
+	}
 
-  return false;
+	return false;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,8 +24,8 @@ export const normalizePort = (val: string): boolean | string | number => {
  * @returns {Function} The wrapped function.
  */
 export const wrap =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, prettier/prettier
-    (fn: any) =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (...args: any) =>
-      fn(...args).catch(args[2]);
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		(fn: any) =>
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		(...args: any) =>
+			fn(...args).catch(args[2]);

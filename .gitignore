@@ -3,6 +3,6 @@
 s_key.mjs
 test.js
 node_modules
-/tests
 /config/.env.dev
 package-lock.json
+/dist

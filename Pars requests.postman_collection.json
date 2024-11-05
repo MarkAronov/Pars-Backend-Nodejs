@@ -20,7 +20,6 @@
 							{
 								"key": "Authorization",
 								"value": " ",
-								"type": "text",
 								"disabled": true
 							}
 						],
@@ -29,12 +28,12 @@
 							"formdata": []
 						},
 						"url": {
-							"raw": "{{url}}/users/",
+							"raw": "{{url}}/user/",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								""
 							]
 						}
@@ -52,7 +51,6 @@
 							{
 								"key": "Authorization",
 								"value": " ",
-								"type": "text",
 								"disabled": true
 							}
 						],
@@ -61,12 +59,12 @@
 							"formdata": []
 						},
 						"url": {
-							"raw": "{{url}}/users/u/asdcd",
+							"raw": "{{url}}/user/u/asdcd",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"u",
 								"asdcd"
 							]
@@ -85,7 +83,6 @@
 							{
 								"key": "Authorization",
 								"value": " ",
-								"type": "text",
 								"disabled": true
 							}
 						],
@@ -101,12 +98,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users/self",
+							"raw": "{{url}}/user/self",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self"
 							]
 						}
@@ -129,12 +126,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users/self/password",
+							"raw": "{{url}}/user/self/password",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self",
 								"password"
 							]
@@ -157,12 +154,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/users/me/important",
+							"raw": "{{url}}/user/me/important",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"me",
 								"important"
 							]
@@ -180,24 +177,24 @@
 							"formdata": [
 								{
 									"key": "content",
-									"value": "\"{\\n  \\\"bio\\\": \\\"yeash\\\"\\n}\"",
+									"value": "\"{\\n  \\\"bio\\\": \\\"yeegtash\\\"\\n}\"",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "avatar",
 									"type": "file",
-									"src": "/D:/Media/__nishizumi_miho_girls_und_panzer_drawn_by_kitayama_miuki__3b438fae79f1bfa45df4c060d612291e.jpg"
+									"src": "/D:/Media/1650518010208.png"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users/self/regular",
+							"raw": "{{url}}/user/self/regular",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self",
 								"regular"
 							]
@@ -268,8 +265,11 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"exec": [],
-								"type": "text/javascript"
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -290,12 +290,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users/login",
+							"raw": "{{url}}/user/login",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"login"
 							]
 						}
@@ -312,12 +312,12 @@
 							"urlencoded": []
 						},
 						"url": {
-							"raw": "{{url}}/users/logout",
+							"raw": "{{url}}/user/logout",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"logout"
 							]
 						}
@@ -330,12 +330,12 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/users/self/logoutall",
+							"raw": "{{url}}/user/self/logoutall",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self",
 								"logoutall"
 							]
@@ -386,12 +386,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users",
+							"raw": "{{url}}/user",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users"
+								"user"
 							]
 						}
 					},
@@ -403,12 +403,12 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/users/self",
+							"raw": "{{url}}/user/self",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self"
 							]
 						}
@@ -431,12 +431,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/users/self/partial",
+							"raw": "{{url}}/user/self/partial",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"self",
 								"partial"
 							]
@@ -494,12 +494,12 @@
 							]
 						},
 						"url": {
-							"raw": "{{url}}/posts",
+							"raw": "{{url}}/post",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"posts"
+								"post"
 							]
 						}
 					},
@@ -511,12 +511,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/posts/65fc7a2489124e613172bfc6",
+							"raw": "{{url}}/post/65fc7a2489124e613172bfc6",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"posts",
+								"post",
 								"65fc7a2489124e613172bfc6"
 							]
 						}
@@ -539,29 +539,24 @@
 								{
 									"key": "videos",
 									"type": "file",
-									"src": "/D:/Media/Final Impact.webm",
-									"disabled": true
+									"src": "postman-cloud:///1eeceac6-5855-4e00-9111-d8186aca5af1"
 								},
 								{
 									"key": "images",
 									"type": "file",
-									"src": [
-										"/D:/Media/Other-FuckFaces/9186718919.jpg",
-										"/D:/Media/Other-FuckFaces/36384992024.jpg",
-										"/D:/Media/Other-FuckFaces/130221984383.jpg"
-									],
+									"src": "/D:/Media/__salome_fate_and_1_more_drawn_by_torichamaru__09ddda79d30a9214a1d0a8204fba0e1e.jpg",
 									"disabled": true
 								}
 							]
 						},
 						"url": {
-							"raw": "{{url}}/posts/635c544fb9e028b49167bf57",
+							"raw": "{{url}}/post/665330749823b8fa43e93a52",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"posts",
-								"635c544fb9e028b49167bf57"
+								"post",
+								"665330749823b8fa43e93a52"
 							]
 						}
 					},
@@ -573,12 +568,12 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/posts/66007ef0b210f4cd582db96c",
+							"raw": "{{url}}/post/66007ef0b210f4cd582db96c",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"posts",
+								"post",
 								"66007ef0b210f4cd582db96c"
 							]
 						}
@@ -591,12 +586,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/posts",
+							"raw": "{{url}}/post",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"posts"
+								"post"
 							]
 						}
 					},
