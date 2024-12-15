@@ -20,13 +20,6 @@ import {
 
 import { dirName } from "./utils";
 
-dotenv.config({
-	path: path.join(
-		`${process.cwd()}/config/`,
-		`.env${process.env.NODE_ENV === "test" ? ".test" : ".dev"}`,
-	),
-});
-
 const app = express();
 
 connect();

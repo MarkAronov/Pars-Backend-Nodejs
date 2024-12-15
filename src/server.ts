@@ -8,12 +8,11 @@ import * as http from "node:http";
 import dotenv from "dotenv";
 import IP from "ip";
 import * as socketio from "socket.io";
-import app from "./app";
-import { normalizePort } from "./utils/generalUtils";
+import app  from "./app.js";
+import { normalizePort } from "./utils/generalUtils.js";
 
 // Load environment variables from .env file
-const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
-dotenv.config({ path: envFile });
+dotenv.config();
 
 /**
  * Get port from environment and store in Express.
