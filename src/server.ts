@@ -5,18 +5,26 @@
  */
 
 import * as http from "node:http";
-import dotenv from "dotenv";
 import IP from "ip";
 import * as socketio from "socket.io";
-import app  from "./app.js";
-import { normalizePort } from "./utils/generalUtils.js";
-
-// Load environment variables from .env file
-dotenv.config();
+import app from "./app.js";
 
 /**
  * Get port from environment and store in Express.
  */
+export const normalizePort = (val: string): boolean | string | number => {
+	const port = Number.parseInt(val, 10);
+
+	if (Number.isNaN(port)) {
+		return val;
+	}
+
+	if (port >= 0) {
+		return port;
+	}
+
+	return false;
+};
 const port = normalizePort(process.env.PORT || "3000");
 app.set("port", port);
 

@@ -5,7 +5,7 @@ import { fileTypeFromFile } from "file-type";
 import type { Response } from "express";
 import { Post, Thread } from "../models";
 import type { PostType, Request } from "../types";
-import { dirName, filterDupes, wrap } from "../utils";
+import { filterDupes, wrap } from "../utils";
 
 export const createThread = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID
@@ -26,7 +26,7 @@ export const createThread = wrap(async (req: Request, res: Response) => {
 		const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 		const mediaType = Object.keys(req.files)[0] as string;
 		const mediaFiles = files[mediaType] as Express.Multer.File[];
-		const mediaFolderPath = path.join(dirName(), `..\\..\\media\\${mediaType}`);
+		const mediaFolderPath = path.join(process.cwd(), `..\\..\\media\\${mediaType}`);
 		const mediaArray: string[] = [];
 
 		for (const file of mediaFiles) {

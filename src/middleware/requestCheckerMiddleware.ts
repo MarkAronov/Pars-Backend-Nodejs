@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import type { NextFunction, Response } from "express";
-import { fileTypeFromFile } from "file-type";
 import _ from "lodash";
 import type mongoose from "mongoose";
 import { Post } from "../models/postModel";
@@ -25,6 +24,7 @@ import {
 	requestedUserGETFields,
 	wrap,
 } from "../utils";
+import { fileTypeFromFile } from "file-type";
 
 /**
  * Middleware to check the parameters and files in the request.
@@ -82,7 +82,7 @@ export const requestCheckerMiddleware = wrap(
 				user = await User.findOne({ username: req.params.username });
 			} catch (err) {
 				throw new ErrorAO(
-					{ERROR: { MAIN: ["Malformed username search query"] }},
+					{ MAIN: ["Malformed username search query"] },
 					"ParameterError",
 					500,
 				);

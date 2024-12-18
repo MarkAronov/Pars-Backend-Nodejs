@@ -6,7 +6,7 @@ import type { Response } from "express";
 
 import { Post } from "../models";
 import type { PostType, Request } from "../types";
-import { dirName, filterDupes, wrap } from "../utils";
+import { filterDupes, wrap } from "../utils";
 
 export const createPost = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID
@@ -27,7 +27,7 @@ export const createPost = wrap(async (req: Request, res: Response) => {
 		const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 		const mediaType = Object.keys(req.files)[0] as string;
 		const mediaFiles = files[mediaType] as Express.Multer.File[];
-		const mediaFolderPath = path.join(dirName(), `..\\..\\media\\${mediaType}`);
+		const mediaFolderPath = path.join(process.cwd(), `..\\..\\media\\${mediaType}`);
 		const mediaArray: string[] = [];
 
 		for (const file of mediaFiles) {
@@ -70,7 +70,7 @@ export const patchPost = wrap(async (req: Request, res: Response) => {
 	let fullPost: PostType | null = null;
 	if (post) {
 		let mediaArray: string[] = post.media;
-		const mediaFolderPath = path.join(dirName(), "..\\..\\media\\");
+		const mediaFolderPath = path.join(process.cwd(), "..\\..\\media\\");
 
 		// Handle new file uploads and remove old files if necessary
 		if (req.files && Object.keys(req.files).length) {

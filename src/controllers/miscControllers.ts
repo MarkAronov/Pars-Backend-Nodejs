@@ -5,7 +5,7 @@ import { fileTypeFromFile } from "file-type";
 import { Post } from "../models/postModel";
 import { User } from "../models/userModel";
 import type { PostType, Request, UserType } from "../types";
-import { dirName, wrap } from "../utils";
+import { wrap } from "../utils";
 
 export const search = wrap(async (req: Request, res: Response) => {
 	const results: { users: UserType[]; posts: PostType[] } = {
@@ -50,7 +50,7 @@ export const search = wrap(async (req: Request, res: Response) => {
 
 export const getMedia = wrap(async (req: Request, res: Response) => {
 	const filePath = path.join(
-		dirName(),
+		process.cwd(),
 		`..\\..\\media\\${req.params.mediatype}\\${req.params.mediafile}`,
 	);
 	const meta = await fileTypeFromFile(filePath);

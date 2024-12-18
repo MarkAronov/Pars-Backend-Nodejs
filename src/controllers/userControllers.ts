@@ -4,13 +4,12 @@ import type { Response } from "express";
 import { fileTypeFromFile } from "file-type";
 
 import { User } from "../models/userModel";
-import { ErrorAO, dirName, wrap } from "../utils";
+import { ErrorAO,  wrap } from "../utils";
 
 import type {
 	IUser,
 	Request,
 	UserMediaTypeKeys,
-	UserModel,
 	UserPartialDeleteTypeKeys,
 	UserRegularPatchTypeKeys,
 	UserType,
@@ -30,10 +29,7 @@ export const createUser = wrap(async (req: Request, res: Response) => {
 			const filesArray = files[mediaType];
 			if (filesArray && filesArray.length > 0) {
 				const file = filesArray[0];
-				const fileFolderPath = path.join(
-					dirName(),
-					`../../media/${mediaType}s`,
-				);
+				const fileFolderPath = path.join(process.cwd(), `/media/${mediaType}s`);
 				const filename = file?.filename;
 				const meta = await fileTypeFromFile(file?.path as string);
 				const newFilename = `${filename}.${meta?.ext}`;
@@ -42,7 +38,6 @@ export const createUser = wrap(async (req: Request, res: Response) => {
 					`${fileFolderPath}/${newFilename}`,
 					() => {},
 				);
-
 				// Update the file information in the request object and user data
 				if (file) file.filename = path.join(fileFolderPath, newFilename);
 				createdUser[mediaType as UserMediaTypeKeys] = newFilename;
@@ -176,10 +171,7 @@ export const patchUserRegular = wrap(async (req: Request, res: Response) => {
 				const filesArray = files[mediaType];
 				if (filesArray && filesArray.length > 0) {
 					const file = filesArray[0];
-					const fileFolderPath = path.join(
-						dirName(),
-						`../../media/${mediaType}s`,
-					);
+					const fileFolderPath = path.join(process.cwd(), `/media/${mediaType}s`);
 					let filename = file?.filename;
 					const meta = await fileTypeFromFile(file?.path as string);
 					const newFilename = `${filename}.${meta?.ext}`;
@@ -221,8 +213,8 @@ export const deleteUserPartial = wrap(async (req: Request, res: Response) => {
 			if (req.body.requestedFields.includes(userKey)) {
 				if (userKey === "avatar" || userKey === "backgroundImage") {
 					const filePath = path.join(
-						dirName(),
-						`../../media/${userKey}s/${req.user[userKey as UserMediaTypeKeys]}`,
+						process.cwd(),
+						`/media/${userKey}s/${req.user[userKey as UserMediaTypeKeys]}`,
 					);
 					fs.rm(filePath, () => {});
 					req.user[userKey as UserMediaTypeKeys] = null;

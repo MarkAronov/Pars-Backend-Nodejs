@@ -8,6 +8,7 @@ import mongoose, {
 } from "mongoose";
 import uniqueValidator from "mongoose-unique-validator"; // Plugin for unique field validation
 
+import _ from "lodash";
 import type {
 	IUser,
 	IUserMethods,
@@ -17,7 +18,6 @@ import type {
 } from "../types"; // Custom types
 import {
 	ErrorAO,
-	dirName,
 	emailChecker,
 	passwordChecker,
 	usernameChecker,
@@ -76,8 +76,7 @@ const UserSchema = new mongoose.Schema<
 			async validate(value: string | undefined) {
 				let emailErrors = [];
 				emailErrors = emailChecker(value); // Custom validation for email
-				if (emailErrors.length !== 0)
-					throw new ErrorAO(emailErrors, "email");
+				if (emailErrors.length !== 0) throw new ErrorAO(emailErrors, "email");
 			},
 		},
 		password: {
@@ -156,7 +155,6 @@ UserSchema.method(
 );
 
 // Method to limit user data for JSON response
-import _ from "lodash";
 
 UserSchema.method(
 	"toLimitedJSON",
@@ -209,7 +207,6 @@ UserSchema.static(
 		const user = await User.findOne({ email });
 		if (!user)
 			throw new ErrorAO({ email: ["Invalid email."] }, "VerificationError");
-
 		const match = await bcrypt.compare(password, user.password as string);
 		if (!match)
 			throw new ErrorAO(
@@ -230,7 +227,7 @@ UserSchema.pre(
 			const post = await Post.findById(postID);
 			await post?.deleteOne();
 		}
-		const fileFolderPath = path.join(dirName(), "../../media/");
+		const fileFolderPath = path.join(process.cwd(), "/media/");
 		if (this.avatar)
 			await fs.promises.rm(`${fileFolderPath}/avatars/${this.avatar}`);
 		if (this.backgroundImage)
@@ -251,7 +248,7 @@ UserSchema.pre(
 				? this.formerPasswords
 				: [];
 			(this.formerPasswords as string[]).push(hashedPassword as string);
-			(this.formerPasswords as string[]).push(hashedPassword as string);
+			this.password = hashedPassword;
 		}
 		next();
 	},

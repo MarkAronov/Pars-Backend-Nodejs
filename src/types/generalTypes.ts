@@ -24,8 +24,9 @@ export interface ValidationError {
 				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				[x: string]: any;
 				reason?: {
-					errorAO: string[]; errorArray: string[] 
-};
+					errorAO: string[];
+					errorArray: string[];
+				};
 				message: string;
 				type?: string;
 			};

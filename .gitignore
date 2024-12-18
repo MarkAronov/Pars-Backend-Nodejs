@@ -1,8 +1,10 @@
 /node_modules
 /media
 s_key.mjs
-test.js
 node_modules
 /config/.env.dev
 package-lock.json
 /dist
+.env.development
+*.postman_environment.json
+*.postman_collection.json

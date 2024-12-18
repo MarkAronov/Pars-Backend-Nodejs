@@ -19,6 +19,7 @@ const TopicSchema = new mongoose.Schema(
 		name: {
 			type: mongoose.Types.ObjectId,
 			required: true,
+			unique: true,
 		},
 		description: {
 			type: mongoose.Schema.Types.ObjectId,
