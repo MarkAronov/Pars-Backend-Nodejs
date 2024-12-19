@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import type { NextFunction, Response } from "express";
-import type { Request } from "../types";
+import type { Request, ValidationError } from "../types";
+import type { MulterError } from "multer";
+import type { ErrorAO } from "@/utils";
 
 /**
  * Error-handling middleware for Express applications.
@@ -13,7 +15,10 @@ import type { Request } from "../types";
  * @param {NextFunction} next - The next middleware function (unused).
  */
 export const errorHandlerMiddleware = async (
-	err,
+	err:
+		| ErrorAO
+		| ValidationError
+		| MulterError,
 	req: Request,
 	res: Response,
 	next: NextFunction,
@@ -60,7 +65,7 @@ export const errorHandlerMiddleware = async (
 
 	// Handle validation errors
 	if (err.name === "ValidationError") {
-		const errorArray = err.errors;
+		const errorArray = (err as ValidationError).errors;
 		const parsedErrorArray: { [key: string]: string[] } = {};
 		const errorKeys: string[] = Object.keys(errorArray);
 		for (const errorKey of errorKeys) {
@@ -108,15 +113,15 @@ export const errorHandlerMiddleware = async (
 			LIMIT_UNEXPECTED_FILE: "Unexpected file",
 			MISSING_FIELD_NAME: "Field name missing",
 		};
-		if (err.code) {
-			const errMsg = errorMessages[err.code];
+		if ((err as MulterError).code) {
+			const errMsg = errorMessages[(err as MulterError).code];
 			if (errMsg) return res.status(400).send({ media: [errMsg] });
 		}
 		return {};
 	}
 	// Handle pre-composed errors
 	if (preComposedErrors.includes(err.name)) {
-		return res.status(err.status || 500).send({ ERROR: err.errorAO });
+		return res.status((err as ErrorAO).status || 500).send({ ERROR: (err as ErrorAO).errorAO });
 	}
 	// Handle generic server errors
 	return res.status(500).send(err.toString());

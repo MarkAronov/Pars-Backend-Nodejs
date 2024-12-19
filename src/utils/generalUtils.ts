@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 /**
  * A wrapper function to handle async errors in route handlers.
  * @param {Function} fn - The async function to wrap.

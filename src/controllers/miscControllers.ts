@@ -15,11 +15,12 @@ export const search = wrap(async (req: Request, res: Response) => {
 	if (req.query?.q) {
 		const query = req.query.q.toString();
 		console.log(query);
-		results.users = await User.aggregate([
+
+		const userSearchResults = await User.aggregate([
 			{
 				$search: {
 					text: {
-						query: [query],
+						query: query,
 						path: ["username", "displayName"],
 						fuzzy: {
 							maxEdits: 2,
@@ -28,12 +29,23 @@ export const search = wrap(async (req: Request, res: Response) => {
 					},
 				},
 			},
+			{
+				$addFields: {
+					score: { $meta: "searchScore" },
+				},
+			},
+			{
+				$sort: {
+					score: -1,
+				},
+			},
 		]);
-		results.posts = await Post.aggregate([
+
+		const postSearchResults = await Post.aggregate([
 			{
 				$search: {
 					text: {
-						query: [query],
+						query: query,
 						path: ["title"],
 						fuzzy: {
 							maxEdits: 2,
@@ -42,7 +54,21 @@ export const search = wrap(async (req: Request, res: Response) => {
 					},
 				},
 			},
+			{
+				$addFields: {
+					score: { $meta: "searchScore" },
+				},
+			},
+			{
+				$sort: {
+					score: -1,
+				},
+			},
 		]);
+
+		results.users = userSearchResults;
+		results.posts = postSearchResults;
+
 		console.log(results);
 	}
 	return res.status(200).send(results);

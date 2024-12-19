@@ -12,20 +12,12 @@ import app from "./app.js";
 /**
  * Get port from environment and store in Express.
  */
-export const normalizePort = (val: string): boolean | string | number => {
-	const port = Number.parseInt(val, 10);
-
-	if (Number.isNaN(port)) {
-		return val;
-	}
-
-	if (port >= 0) {
-		return port;
-	}
-
-	return false;
-};
-const port = normalizePort(process.env.PORT || "3000");
+const port = ((val: string): boolean | string | number =>
+	Number.isNaN(Number.parseInt(val, 10))
+		? val
+		: Number.parseInt(val, 10) >= 0
+			? Number.parseInt(val, 10)
+			: false)(process.env.PORT || "3000");
 app.set("port", port);
 
 /**
