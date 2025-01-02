@@ -1,13 +1,13 @@
 import fs from "node:fs";
-// Import necessary modules and dependencies
-import mongoose from "mongoose";
 import type {
 	IPost,
 	IPostMethods,
 	IPostVirtuals,
 	PostModel,
 	PostType,
-} from "../types"; // Custom types
+} from "@/types"; // Custom types
+// Import necessary modules and dependencies
+import mongoose from "mongoose";
 
 const schemaOptions: object = {
 	toJSON: {

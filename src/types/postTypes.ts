@@ -18,9 +18,7 @@ export interface IPostVirtuals {
 }
 
 export interface IPostMethods {
-	generateToken(): string;
 	toCustomJSON(): HydratedDocument<IPost, IPostMethods & IPostVirtuals>;
-	verifyPassword(currentPassword: string): null;
 }
 
 export type PostModel = Model<IPost, object, IPostMethods & IPostVirtuals>;

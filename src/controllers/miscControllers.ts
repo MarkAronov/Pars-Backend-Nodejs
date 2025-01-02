@@ -2,10 +2,9 @@ import path from "node:path";
 import type { Response } from "express";
 import { fileTypeFromFile } from "file-type";
 
-import { Post } from "../models/postModel";
-import { User } from "../models/userModel";
-import type { PostType, Request, UserType } from "../types";
-import { wrap } from "../utils";
+import { Post, User } from "@/models";
+import type { PostType, Request, UserType } from "@/types";
+import { wrap } from "@/utils";
 
 export const search = wrap(async (req: Request, res: Response) => {
 	const results: { users: UserType[]; posts: PostType[] } = {
@@ -14,7 +13,6 @@ export const search = wrap(async (req: Request, res: Response) => {
 	};
 	if (req.query?.q) {
 		const query = req.query.q.toString();
-		console.log(query);
 
 		const userSearchResults = await User.aggregate([
 			{
@@ -69,7 +67,6 @@ export const search = wrap(async (req: Request, res: Response) => {
 		results.users = userSearchResults;
 		results.posts = postSearchResults;
 
-		console.log(results);
 	}
 	return res.status(200).send(results);
 });

@@ -8,23 +8,19 @@ import mongoose, {
 } from "mongoose";
 import uniqueValidator from "mongoose-unique-validator"; // Plugin for unique field validation
 
-import _ from "lodash";
 import type {
 	IUser,
 	IUserMethods,
 	IUserVirtuals,
 	UserModel,
 	UserType,
-} from "../types"; // Custom types
-import {
-	ErrorAO,
-	emailChecker,
-	passwordChecker,
-	usernameChecker,
-} from "../utils";
+} from "@/types"; // Custom types
+import type { Request } from "@/types";
+import { ErrorAO } from "@/utils";
+import _ from "lodash";
+import validator from "validator";
 // Import models and utilities
 import { Post } from "./postModel";
-
 // Define schema options
 const schemaOptions: object = {
 	toJSON: {
@@ -53,10 +49,14 @@ const UserSchema = new mongoose.Schema<
 			required: true,
 			maxLength: [64, "Username is longer than 64 characters."],
 			trim: true,
-			async validate(value: string | undefined) {
-				let usernameErrors: string[] = [];
-				usernameErrors = usernameChecker(value); // Custom validation for username
-				if (usernameErrors.length !== 0)
+			async validate(value: string) {
+				const usernameErrors = [];
+
+				if (validator.contains(value, " "))
+					usernameErrors.push("Username contains whitespace");
+				if (!value.match(/^[0-9a-zA-Z\s]+$/))
+					usernameErrors.push("Username contains non-alphanumeric characters");
+				if (usernameErrors.length)
 					throw new ErrorAO(usernameErrors, "username");
 			},
 		},
@@ -73,20 +73,26 @@ const UserSchema = new mongoose.Schema<
 			maxLength: [254, "Email is longer than 254 characters."],
 			lowercase: true,
 			trim: true,
-			async validate(value: string | undefined) {
-				let emailErrors = [];
-				emailErrors = emailChecker(value); // Custom validation for email
-				if (emailErrors.length !== 0) throw new ErrorAO(emailErrors, "email");
+			async validate(value: string) {
+				if (!validator.isEmail(value))
+					throw new ErrorAO(["Invalid email"], "email");
 			},
 		},
 		password: {
 			type: String,
 			required: true,
 			maxLength: 254,
-			async validate(value: string | undefined) {
-				let passwordErrorsList = [];
-				passwordErrorsList = passwordChecker(value); // Custom validation for password
-				if (passwordErrorsList.length !== 0)
+			async validate(value: string) {
+				const passwordErrorsList = [];
+				if (value.length < 10)
+					passwordErrorsList.push("Must be at least 8 characters.");
+				if (!/[A-Z]/.test(value))
+					passwordErrorsList.push("Must contain an uppercase letter.");
+				if (!/\d/.test(value)) passwordErrorsList.push("Must contain a digit.");
+				// if (!/[!@#$%^&*(),.?":{}|<>]/.test(value))
+				// 	passwordErrorsList.push("Must contain a special character.");
+
+				if (passwordErrorsList.length)
 					throw new ErrorAO(passwordErrorsList, "password");
 			},
 		},
@@ -96,10 +102,36 @@ const UserSchema = new mongoose.Schema<
 			default: "",
 			trim: true,
 		},
-		tokens: [
+		sessions: [
 			{
 				token: {
 					type: String,
+					required: true,
+				},
+				createdAt: {
+					type: Date,
+					default: Date.now,
+					required: true,
+				},
+				userAgent: {
+					type: String,
+					required: true,
+				},
+				ipAddress: {
+					type: String,
+					default: null,
+				},
+				expiresAt: {
+					type: Date,
+					default: null,
+				},
+				deviceInfo: {
+					type: String,
+					default: null,
+				},
+				location: {
+					type: String,
+					default: null,
 				},
 			},
 		],
@@ -141,14 +173,28 @@ UserSchema.virtual("posts", {
 // Method to generate JWT token for user authentication
 UserSchema.method(
 	"generateToken",
-	async function generateToken(this: UserType) {
+	async function generateToken(this: UserType, req: Request) {
 		const token = jwt.sign(
 			{ id: (this._id as unknown as string).toString() },
 			process?.env?.JWT_STRING as Secret,
 		);
-		this.tokens = (Array.isArray(this.tokens) ? this.tokens : []).concat({
+		this.sessions = (Array.isArray(this.sessions) ? this.sessions : []).concat({
 			token,
-		}) as { token?: string }[];
+			createdAt: new Date(),
+			userAgent: req.headers["user-agent"] || "unknown",
+			ipAddress: req.ip,
+			deviceInfo: req.headers["device-info"] || "unknown",
+			location: req.headers.location || "unknown",
+			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
+		}) as {
+			token: string;
+			createdAt: Date;
+			userAgent: string;
+			ipAddress?: string;
+			deviceInfo?: string;
+			location?: string;
+			expiresAt?: Date;
+		}[];
 		await this.save();
 		return token;
 	},
@@ -159,7 +205,7 @@ UserSchema.method(
 UserSchema.method(
 	"toLimitedJSON",
 	function toLimitedJSON(this: UserType, limitLevel: number) {
-		let userObject = this.toObject({ virtuals: true }) as UserType;
+		let userObject = this.toObject({ virtuals: true }) as unknown as UserType;
 		if ((userObject.settings as { hideWhenMade?: boolean })?.hideWhenMade) {
 			userObject = _.omit(userObject, ["createdAt"]) as UserType;
 		}
@@ -174,7 +220,7 @@ UserSchema.method(
 		if (limitLevel >= 1) {
 			userObject = _.omit(userObject, [
 				"_id",
-				"tokens",
+				"sessions",
 				"settings",
 				"email",
 			]) as UserType;
@@ -229,10 +275,10 @@ UserSchema.pre(
 		}
 		const fileFolderPath = path.join(process.cwd(), "/media/");
 		if (this.avatar)
-			await fs.promises.rm(`${fileFolderPath}/avatars/${this.avatar}`);
+			await fs.promises.rm(`${fileFolderPath}/avatar/${this.avatar}`);
 		if (this.backgroundImage)
 			await fs.promises.rm(
-				`${fileFolderPath}/backgroundImages/${this.backgroundImage}`,
+				`${fileFolderPath}/backgroundImage/${this.backgroundImage}`,
 			);
 		next();
 	},

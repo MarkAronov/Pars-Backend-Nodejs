@@ -33,13 +33,8 @@ describe("User Login", async () => {
 	it("should log in a user", async () => {
 		const response = await request(app)
 			.post("/user/login")
-			.field(
-				"content",
-				JSON.stringify({
-					email: "logoutUserTest@testing.com",
-					password: "Password123",
-				}),
-			);
+			.field("email", "logoutUserTest@testing.com")
+			.field("password", "Password123");
 
 		expect(response.status).toBe(200);
 		expect(response.body).toHaveProperty("user");
@@ -49,13 +44,8 @@ describe("User Login", async () => {
 	it("should not log in a user with a wrong email", async () => {
 		const response = await request(app)
 			.post("/user/login")
-			.field(
-				"content",
-				JSON.stringify({
-					email: "test@testing.com",
-					password: "Password123",
-				}),
-			);
+			.field("email", "test@testing.com")
+			.field("password", "Password123");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -66,13 +56,8 @@ describe("User Login", async () => {
 	it("should not log in a user with a wrong password", async () => {
 		const response = await request(app)
 			.post("/user/login")
-			.field(
-				"content",
-				JSON.stringify({
-					email: "logoutUserTest@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("email", "logoutUserTest@testing.com")
+			.field("password", "Password12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -83,12 +68,7 @@ describe("User Login", async () => {
 	it("should not log in a user with a missing email", async () => {
 		const response = await request(app)
 			.post("/user/login")
-			.field(
-				"content",
-				JSON.stringify({
-					password: "Password123",
-				}),
-			);
+			.field("password", "Password123");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -99,12 +79,7 @@ describe("User Login", async () => {
 	it("should not log in a user with a missing password", async () => {
 		const response = await request(app)
 			.post("/user/login")
-			.field(
-				"content",
-				JSON.stringify({
-					email: "logoutUserTest@testing.com",
-				}),
-			);
+			.field("email", "logoutUserTest@testing.com");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -113,9 +88,7 @@ describe("User Login", async () => {
 	});
 
 	it("should not log in a user due to missing all of the requested fields", async () => {
-		const response = await request(app)
-			.post("/user/login")
-			.field("content", JSON.stringify({}));
+		const response = await request(app).post("/user/login");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -148,7 +121,6 @@ describe("User Logout", async () => {
 		await User.deleteMany();
 		await new User(testUser).save();
 	});
-
 
 	it("should log out a user", async () => {
 		const token = testUser.tokens[0].token;
@@ -189,7 +161,7 @@ describe("User Logout", async () => {
 			expect(response.status).toBe(200);
 
 			const user = await User.findById(testUser._id);
-			expect(user?.tokens.length).toBe(0);
+			expect((user?.tokens as { token: string }[]).length).toBe(0);
 		});
 
 		it("should not log out a user from all sessions without authorization", async () => {

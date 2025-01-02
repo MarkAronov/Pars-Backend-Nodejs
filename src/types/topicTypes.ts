@@ -5,6 +5,7 @@ import type { PostType, ThreadType } from ".";
 export interface ITopic {
 	name: string;
 	description: string;
+	cover: string;
 }
 
 export interface ITopicVirtuals {
@@ -15,6 +16,7 @@ export interface ITopicVirtuals {
 export interface ITopicMethods {
 	toCustomJSON(): HydratedDocument<ITopic, ITopicMethods & ITopicVirtuals>;
 }
+export type TopicMediaTypeKey = "cover";
 
 export type TopicModel = Model<ITopic, object, ITopicMethods & ITopicVirtuals>;
 

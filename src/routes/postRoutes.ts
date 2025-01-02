@@ -7,13 +7,17 @@ import {
 	getAllPosts,
 	getOnePost,
 	patchPost,
-} from "../controllers";
-import {
-	authMiddleware,
-	jsonParserMiddleware,
-	postMulter,
-	requestCheckerMiddleware,
-} from "../middleware";
+} from "@/controllers";
+import { authMiddleware, requestCheckerMiddleware } from "@/middleware";
+
+export const postParams = [
+	"title",
+	"content",
+	"mentionedParents",
+	"images",
+	"videos",
+	"datafiles",
+];
 
 // Create a new express router
 export const postRoutes = express.Router();
@@ -24,25 +28,41 @@ export const postRoutes = express.Router();
 postRoutes.post(
 	"/post",
 	authMiddleware, // Middleware for authentication
-	postMulter, // Middleware for handling file uploads
-	jsonParserMiddleware, // Middleware for parsing JSON data
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: ["topic", "thread", "title"],
+		optionalParams: postParams,
+	}), // Middleware for checking parameters
 	createPost,
 );
 
 // GET request for list of all Post items.
-postRoutes.get("/post", getAllPosts);
+postRoutes.get(
+	"/post",
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}),
+	getAllPosts,
+);
 
 // GET request for a specific Post by ID.
-postRoutes.get("/post/:id", getOnePost);
+postRoutes.get(
+	"/post/:id",
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}),
+	getOnePost,
+);
 
 // PATCH request to update a Post by ID.
 postRoutes.patch(
 	"/post/:id",
 	authMiddleware, // Middleware for authentication
-	postMulter, // Middleware for handling file uploads
-	jsonParserMiddleware, // Middleware for parsing JSON data
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [...postParams, "filesToRemove"]
+	}), // Middleware for checking parameters
 	patchPost,
 );
 
@@ -50,6 +70,9 @@ postRoutes.patch(
 postRoutes.delete(
 	"/post/:id",
 	authMiddleware, // Middleware for authentication
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}), // Middleware for checking parameters
 	deletePost,
 );

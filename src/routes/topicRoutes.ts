@@ -1,35 +1,52 @@
 // Import necessary modules and dependencies
 import express from "express";
 
-import { createTopic } from "../controllers";
-import {
-	TopicMulter,
-	authMiddleware,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
-} from "../middleware";
+import { createTopic, deleteTopic, getTopic, getTopics } from "@/controllers";
+import { authMiddleware, requestCheckerMiddleware } from "@/middleware";
 
 // Create a new express router
 export const topicsRoutes = express.Router();
 
-/// POST ROUTES ///
+/// TOPIC ROUTES ///
 
-// POST request for creating a new Post.
+// POST request for creating a new Topic.
 topicsRoutes.post(
 	"/topic",
 	authMiddleware, // Middleware for authentication
-	TopicMulter, // Middleware for handling file uploads
-	jsonParserMiddleware, // Middleware for parsing JSON data
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: ["name", "description"],
+		optionalParams: ["cover"],
+	}), // Middleware for checking parameters
 	createTopic,
 );
 
-// GET request for a specific Post by ID.
-topicsRoutes.get("/topic/:id");
+// GET request for all Topics.
+topicsRoutes.get(
+	"/topics",
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}), // Middleware for checking parameters
+	getTopics,
+);
 
-// DELETE request to delete a Post by ID.
+// GET request for a specific Topic by name.
+topicsRoutes.get(
+	"/topic/:name",
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}), // Middleware for checking parameters
+	getTopic,
+);
+
+// DELETE request to delete a Topic by name.
 topicsRoutes.delete(
-	"/topic/:id",
+	"/topic/:name",
 	authMiddleware, // Middleware for authentication
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}), // Middleware for checking parameters
+	deleteTopic,
 );

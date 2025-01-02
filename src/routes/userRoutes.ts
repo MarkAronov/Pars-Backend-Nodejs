@@ -14,15 +14,23 @@ import {
 	patchUserImportant,
 	patchUserPassword,
 	patchUserRegular,
-} from "../controllers";
+} from "@/controllers";
 import {
 	authMiddleware,
-	jsonParserMiddleware,
 	requestCheckerMiddleware,
-	userMulter,
-} from "../middleware";
+} from "@/middleware";
+
+const userOptionalParams = [
+	"displayName",
+	"bio",
+	"hideWhenMade",
+	"hidePosts",
+	"avatar",
+	"backgroundImage",
+];
 
 // Create a new express router
+
 export const usersRoutes = express.Router();
 
 // / USER ROUTES ///
@@ -30,18 +38,20 @@ export const usersRoutes = express.Router();
 // POST request for creating a new User.
 usersRoutes.post(
 	"/user",
-	userMulter, // Middleware for handling file uploads
-	jsonParserMiddleware, // Middleware for parsing JSON data
-	requestCheckerMiddleware, // Middleware for checking parameters
+	requestCheckerMiddleware({
+		requiredParams: ["email", "username", "password"],
+		optionalParams: userOptionalParams,
+	}), // Middleware for checking parameters
 	createUser,
 );
 
 // POST request for logging the user in.
 usersRoutes.post(
 	"/user/login",
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["email", "password"],
+		optionalParams: [],
+	}),
 	loginUser,
 );
 
@@ -49,26 +59,32 @@ usersRoutes.post(
 usersRoutes.post(
 	"/user/logout",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["email", "username", "password"],
+		optionalParams: [],
+	}),
 	logoutUser,
 );
 
 // POST request for logging the user out from all sessions.
 usersRoutes.post(
-	"/user/self/logoutall",
+	"/user/logoutall",
 	authMiddleware, // Middleware for authentication
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}),
 	logoutAllUser,
 );
 
 // GET request for list of all Users.
 usersRoutes.get(
-	"/user",
+	"/users",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["requestedFields"],
+		optionalParams: [],
+	}),
 	getAllUsers,
 );
 
@@ -76,9 +92,10 @@ usersRoutes.get(
 usersRoutes.get(
 	"/user/self",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}),
 	getSelfUser,
 );
 
@@ -86,55 +103,64 @@ usersRoutes.get(
 usersRoutes.get(
 	"/user/u/:username",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["requestedFields"],
+		optionalParams: [],
+	}),
 	getUser,
-);
-
-// PATCH request to update User's password.
-usersRoutes.patch(
-	"/user/self/password",
-	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
-	patchUserPassword,
 );
 
 // PATCH request to update important User details.
 usersRoutes.patch(
-	"/user/self/important",
+	"/user/important",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["password"],
+		optionalParams: ["email", "username"],
+	}),
 	patchUserImportant,
+);
+
+// PATCH request to update User password.
+usersRoutes.patch(
+	"/user/password",
+	authMiddleware, // Middleware for authentication
+	requestCheckerMiddleware({
+		requiredParams: ["currentPassword", "newPassword"],
+		optionalParams: [],
+	}),
+	patchUserPassword,
 );
 
 // PATCH request to update regular User details.
 usersRoutes.patch(
-	"/user/self/regular",
+	"/user/regular",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: userOptionalParams,
+	}),
 	patchUserRegular,
 );
 
-// DELETE request to delete the authenticated User.
+// DELETE request to delete a User.
 usersRoutes.delete(
-	"/user/self",
+	"/user",
 	authMiddleware, // Middleware for authentication
+	requestCheckerMiddleware({
+		requiredParams: [],
+		optionalParams: [],
+	}),
 	deleteUser,
 );
 
-// DELETE request to partially delete User objects.
+// DELETE request to partially delete a User.
 usersRoutes.delete(
-	"/user/self/partial",
+	"/user/partial",
 	authMiddleware, // Middleware for authentication
-	userMulter,
-	jsonParserMiddleware,
-	requestCheckerMiddleware,
+	requestCheckerMiddleware({
+		requiredParams: ["avatar", "backgroundImage"],
+		optionalParams: [],
+	}),
 	deleteUserPartial,
 );

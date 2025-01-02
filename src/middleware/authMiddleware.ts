@@ -1,8 +1,8 @@
+import { User } from "@/models/userModel";
+import type { Request } from "@/types";
+import { ErrorAO, wrap } from "@/utils";
 import type { NextFunction, Response } from "express";
 import jsonwebtoken, { type Secret } from "jsonwebtoken";
-import { User } from "../models/userModel";
-import type { Request } from "../types";
-import { ErrorAO, wrap } from "../utils";
 
 /**
  * Middleware function for authenticating a user via a JWT token.

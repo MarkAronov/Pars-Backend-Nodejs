@@ -4,12 +4,14 @@ import { fileTypeFromFile } from "file-type";
 
 import type { Response } from "express";
 
-import { Post } from "../models";
-import type { PostType, Request } from "../types";
-import { filterDupes, wrap } from "../utils";
+import { Post } from "@/models";
+import type { PostType, Request } from "@/types";
+import { filterDupes, wrap } from "@/utils";
+import mongoose from "mongoose";
 
-export const createPost = wrap(async (req: Request, res: Response) => {
+export const createPostTemplate = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID
+	console.log(`post ${req.body}`)
 	const post = new Post({ ...req.body, user: req?.user?._id }) as PostType;
 
 	// Handle mentioned parents
@@ -27,18 +29,10 @@ export const createPost = wrap(async (req: Request, res: Response) => {
 		const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 		const mediaType = Object.keys(req.files)[0] as string;
 		const mediaFiles = files[mediaType] as Express.Multer.File[];
-		const mediaFolderPath = path.join(process.cwd(), `..\\..\\media\\${mediaType}`);
 		const mediaArray: string[] = [];
 
 		for (const file of mediaFiles) {
-			const filename = file.filename;
-			const meta = await fileTypeFromFile(file.path);
-			await fs.rename(
-				`${mediaFolderPath}\\${filename}`,
-				`${mediaFolderPath}\\${filename}.${meta?.ext}`,
-				() => {},
-			);
-			mediaArray.push(`${filename}.${meta?.ext}`);
+			mediaArray.push(file.filename);
 		}
 
 		post.media = mediaArray;
@@ -47,7 +41,13 @@ export const createPost = wrap(async (req: Request, res: Response) => {
 
 	// Save the post and return the full post data
 	await post.save();
+	return post;
+});
+
+export const createPost = wrap(async (req: Request, res: Response) => {
+	const post = await createPostTemplate(req, res);
 	const fullPost = await post.toCustomJSON();
+
 	return res.status(200).send(fullPost);
 });
 
@@ -88,14 +88,7 @@ export const patchPost = wrap(async (req: Request, res: Response) => {
 			const mediaFiles = files[mediaType] as Express.Multer.File[];
 			mediaArray = [];
 			for (const file of mediaFiles) {
-				const filename = file.filename;
-				const meta = await fileTypeFromFile(file.path);
-				await fs.rename(
-					`${mediaFolderPath}\\${mediaType}\\${filename}`,
-					`${mediaFolderPath}\\${mediaType}\\${filename}.${meta?.ext}`,
-					() => {},
-				);
-				mediaArray.push(`${filename}.${meta?.ext}`);
+				mediaArray.push(file.filename);
 			}
 
 			post.media = mediaArray;

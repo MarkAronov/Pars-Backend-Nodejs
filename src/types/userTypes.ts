@@ -5,7 +5,7 @@ import type {
 	Schema,
 } from "mongoose";
 import type { PostType } from "./postTypes";
-
+import type { Request } from "express";
 // User Related Types
 
 // Define the user schema interface
@@ -16,13 +16,21 @@ export interface IUser {
 	email?: string;
 	password?: string;
 	bio?: string | null;
-	tokens?: { token?: string | null }[] | null;
-	avatar?: string | null;
+  sessions: {
+    token: string;
+    createdAt: Date;
+    userAgent: string;
+    ipAddress?: string;
+    deviceInfo?: string;
+    location?: string;
+    expiresAt?: Date;
+  }[];	avatar?: string | null;
 	backgroundImage?: string | null;
 	settings?: { hideWhenMade?: boolean; hidePosts?: boolean };
 	formerPasswords?: string[]; // Stores hashed passwords
 	createdAt?: MongooseDate;
 	updatedAt?: MongooseDate;
+	schemaVersion?: number;
 }
 
 // Define virtual properties for the user schema
@@ -32,7 +40,7 @@ export interface IUserVirtuals {
 
 // Define methods for the user schema
 export interface IUserMethods {
-	generateToken(): string; // Generates a JWT token
+	generateToken(req: Request): Promise<string>;	// Generates a JWT token
 	toLimitedJSON(
 		limitLevel: number,
 	): HydratedDocument<IUser, IUserMethods & IUserVirtuals>; // Returns user data with limited fields
@@ -67,11 +75,3 @@ export type UserRegularPatchTypeKeys =
 	| "settings";
 
 export type UserOptionalTypeKeys = "bio";
-
-// Allowed Media Types
-export type AllowedMediaTypesKeys =
-	| "avatar"
-	| "backgroundImage"
-	| "images"
-	| "videos"
-	| "datafiles";

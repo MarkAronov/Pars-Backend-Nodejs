@@ -1,8 +1,8 @@
 import fs from "node:fs";
-import type { NextFunction, Response } from "express";
-import type { Request, ValidationError } from "../types";
-import type { MulterError } from "multer";
+import type { Request, ValidationError } from "@/types";
 import type { ErrorAO } from "@/utils";
+import type { NextFunction, Response } from "express";
+import type { MulterError } from "multer";
 
 /**
  * Error-handling middleware for Express applications.
@@ -15,52 +15,61 @@ import type { ErrorAO } from "@/utils";
  * @param {NextFunction} next - The next middleware function (unused).
  */
 export const errorHandlerMiddleware = async (
-	err:
-		| ErrorAO
-		| ValidationError
-		| MulterError,
+	err: ErrorAO | ValidationError | MulterError,
 	req: Request,
 	res: Response,
 	next: NextFunction,
 ) => {
-	const preComposedErrors = [
+	// AuthenticationError: Errors related to user authentication, such as invalid tokens or unauthorized access.
+	// AuthorizationError: Errors related to user authorization, such as insufficient permissions.
+	// ConflictError: Errors indicating a conflict, such as duplicate entries or conflicting updates.
+	// DatabaseError: Errors related to database operations, such as failed queries or connection issues.
+	// InternalServerError: General server errors indicating an unexpected condition.
+	// MediaError: Errors related to file uploads and media validation.
+	// NotFoundError: Errors indicating that a requested resource was not found.
+	// ParameterError: Errors related to invalid or missing parameters.
+	// RequestError: Errors related to malformed requests or unsupported request methods.
+	// ValidationError: General validation errors for various inputs.
+	// VerificationError: Errors related to user verification, such as incorrect passwords or invalid emails.
+	const errorTypes = [
 		"AuthenticationError",
+		"AuthorizationError",
+		"ConflictError",
+		"DatabaseError",
+		"InternalServerError",
+		"MediaError",
+		"NotFoundError",
 		"ParameterError",
+		"RequestError",
+		"ValidationError",
 		"VerificationError",
 	];
 
-	const urlsThatUploadFiles = [
-		"/user",
-		"/user/self/regular",
-		"/post",
-		"/post/:id",
-	];
-
 	// Handle requests for non-existent media files
-	if (req.route.path === "/media/:mediatype/:mediafile") {
+	if (req?.route?.path === "/media/:mediatype/:mediafile") {
 		return res.status(404).send({
 			media: "file does not exist",
 		});
 	}
 
 	// Remove uploaded files if the request fails and involves file uploads
-	if (
-		urlsThatUploadFiles.includes(req.route.path) &&
-		(req.method === "POST" || req.method === "PATCH")
-	) {
-		if (!req.files) return;
-
+	if (req.files) {
 		const filesGroupedByMediaType = req.files as {
 			[fieldname: string]: Express.Multer.File[];
 		};
 
-		await Promise.all(
-			Object.keys(filesGroupedByMediaType).map(async (mediaType: string) => {
-				const files = filesGroupedByMediaType[mediaType];
-				if (files)
-					await Promise.all(files.map((file) => fs.rm(file.path, () => {})));
-			}),
-		);
+		for (const mediaType in filesGroupedByMediaType) {
+			const files = filesGroupedByMediaType[mediaType];
+			for (const file of files) {
+				if (file.path) {
+					fs.unlink(file.path, (unlinkErr) => {
+						if (unlinkErr) {
+							console.error(`Failed to delete file: ${file.path}`, unlinkErr);
+						}
+					});
+				}
+			}
+		}
 	}
 
 	// Handle validation errors
@@ -68,15 +77,16 @@ export const errorHandlerMiddleware = async (
 		const errorArray = (err as ValidationError).errors;
 		const parsedErrorArray: { [key: string]: string[] } = {};
 		const errorKeys: string[] = Object.keys(errorArray);
+
 		for (const errorKey of errorKeys) {
 			const CapKey = errorKey.charAt(0).toUpperCase() + errorKey.slice(1);
 
-			const errExtract = errorArray[errorKey].properties.reason;
-			if (errExtract) {
+			const errExtract = errorArray[errorKey]?.properties?.reason;
+			if (errExtract?.errorAO) {
 				parsedErrorArray[errorKey] = errExtract.errorAO;
 			}
 
-			const dupeMessage = errorArray[errorKey].properties.message;
+			const dupeMessage = errorArray[errorKey]?.properties?.message;
 			if (dupeMessage === "dupe") {
 				parsedErrorArray[errorKey] = [
 					`${CapKey} is being currently used, use a different one`,
@@ -84,23 +94,28 @@ export const errorHandlerMiddleware = async (
 			}
 
 			if (
-				errorArray[errorKey].kind === "maxlength" &&
+				errorArray[errorKey]?.kind === "maxlength" &&
 				errorKey !== "displayName"
 			) {
-				parsedErrorArray[errorKey] = [errorArray[errorKey].properties.message];
+				parsedErrorArray[errorKey] = [
+					errorArray[errorKey]?.properties?.message,
+				];
 			}
 
-			if (errorArray[errorKey].properties.type === "required") {
+			if (errorArray[errorKey]?.properties?.type === "required") {
 				parsedErrorArray[errorKey] = [`${CapKey} is empty`];
 			}
 		}
+
 		return res.status(400).send({
 			ERROR: parsedErrorArray,
 		});
 	}
+
 	if (err.name === "SearchError") {
 		return res.status(404).send();
 	}
+
 	// Handle Multer errors
 	if (err.name === "MulterError") {
 		const errorMessages: { [index: string]: string } = {
@@ -119,9 +134,12 @@ export const errorHandlerMiddleware = async (
 		}
 		return {};
 	}
+
 	// Handle pre-composed errors
-	if (preComposedErrors.includes(err.name)) {
-		return res.status((err as ErrorAO).status || 500).send({ ERROR: (err as ErrorAO).errorAO });
+	if (errorTypes.includes(err.name)) {
+		return res
+			.status((err as ErrorAO).status || 500)
+			.send({ ERROR: (err as ErrorAO).errorAO });
 	}
 	// Handle generic server errors
 	return res.status(500).send(err.toString());

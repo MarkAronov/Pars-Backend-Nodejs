@@ -1,5 +1,5 @@
+import { getMedia, search, unmatchedRoute } from "@/controllers";
 import express from "express";
-import { getMedia, search, unmatchedRoute } from "../controllers";
 
 export const miscRoutes = express.Router();
 /// OTHER NEEDED ROUTES ///

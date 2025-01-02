@@ -1,12 +1,13 @@
-// Import necessary modules and dependencies
-import mongoose from "mongoose";
 import type {
 	IThread,
 	IThreadMethods,
 	IThreadVirtuals,
 	ThreadModel,
 	ThreadType,
-} from "../types"; // Custom types
+} from "@/types"; // Custom types
+// Import necessary modules and dependencies
+import mongoose from "mongoose";
+import { Post } from "./postModel";
 
 const schemaOptions: object = {
 	toJSON: {
@@ -53,8 +54,11 @@ ThreadSchema.pre(
 	"deleteOne",
 	{ document: true, query: false },
 	async function preRemove(this: ThreadType, next: () => void) {
-		console.log(this);
-
+		await this.populate("posts");
+		for (const postID of this.posts) {
+			const post = await Post.findById(postID);
+			await post?.deleteOne();
+		}
 		next();
 	},
 );

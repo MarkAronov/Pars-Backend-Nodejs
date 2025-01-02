@@ -1,5 +1,5 @@
+import type { PostType, ThreadType, TopicType, UserType } from "@/types";
 import type { Request as expressRequest } from "express";
-import type { UserType } from "./userTypes";
 
 // Interface for Route Configuration
 export interface RouteConfig {
@@ -7,17 +7,6 @@ export interface RouteConfig {
 	optionalParams: string[];
 	isParameterFree: boolean;
 }
-
-// Interface for Parameter List
-export type ParameterList = {
-	[index: string]: {
-		[index: string]: {
-			requiredParams: string[];
-			optionalParams: string[];
-		};
-	};
-};
-
 export interface ValidationError extends Error {
 	errors: {
 		[key: string]: {
@@ -39,27 +28,9 @@ export interface ValidationError extends Error {
 // Extended Express Request Interface
 export interface Request extends expressRequest {
 	user?: UserType;
+	post?: PostType;
+	thread?: ThreadType;
+	topic?: TopicType;
 	token?: string;
-}
-
-// Request Map Configuration
-export interface RequestMapConfig {
-	[method: string]: {
-		[route: string]: RouteConfig;
-	};
-}
-
-// General Types
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-// Token Interface
-export interface Token {
-	token: string;
-	_id: string;
-	id: string;
-}
-
-// Tokens Interface
-export interface Tokens {
-	tokens: Token[];
+	errorList?: { [key: string]: string[] };
 }

@@ -3,9 +3,9 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import logger from "morgan";
-import { connect } from "./database/mongoose";
+import { databaseConnect } from "./database/mongoose";
 
-import { errorHandlerMiddleware } from "./middleware";
+import { dynamicMulter, errorHandlerMiddleware } from "./middleware";
 
 import {
 	miscRoutes,
@@ -17,7 +17,7 @@ import {
 
 const app = express();
 
-connect();
+databaseConnect();
 app.disable("x-powered-by");
 
 app.use(helmet());
@@ -26,7 +26,7 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(process.cwd(), "public")));
-
+app.use(dynamicMulter);
 app.use(usersRoutes, topicsRoutes, threadsRoutes, postRoutes, miscRoutes);
 
 app.use(errorHandlerMiddleware);

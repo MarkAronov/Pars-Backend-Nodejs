@@ -3,8 +3,8 @@ import path from "node:path";
 import type { Response } from "express";
 import { fileTypeFromFile } from "file-type";
 
-import { User } from "../models/userModel";
-import { ErrorAO,  wrap } from "../utils";
+import { User } from "@/models/userModel";
+import { ErrorAO, wrap } from "@/utils";
 
 import type {
 	IUser,
@@ -13,7 +13,7 @@ import type {
 	UserPartialDeleteTypeKeys,
 	UserRegularPatchTypeKeys,
 	UserType,
-} from "../types";
+} from "@/types";
 
 export const createUser = wrap(async (req: Request, res: Response) => {
 	const userData = req.body;
@@ -21,34 +21,19 @@ export const createUser = wrap(async (req: Request, res: Response) => {
 	const createdUser = new User(userData);
 
 	// Handle file uploads
-	if (req.files && Object.keys(req.files).length) {
+	if (req.files) {
 		const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-		const mediaTypes = Object.keys(files);
 
-		for (const mediaType of mediaTypes) {
-			const filesArray = files[mediaType];
-			if (filesArray && filesArray.length > 0) {
-				const file = filesArray[0];
-				const fileFolderPath = path.join(process.cwd(), `/media/${mediaType}s`);
-				const filename = file?.filename;
-				const meta = await fileTypeFromFile(file?.path as string);
-				const newFilename = `${filename}.${meta?.ext}`;
-				await fs.rename(
-					`${fileFolderPath}/${filename}`,
-					`${fileFolderPath}/${newFilename}`,
-					() => {},
-				);
-				// Update the file information in the request object and user data
-				if (file) file.filename = path.join(fileFolderPath, newFilename);
-				createdUser[mediaType as UserMediaTypeKeys] = newFilename;
+		for (const [mediaType, fileArray] of Object.entries(files)) {
+			if (fileArray.length > 0) {
+				createdUser[mediaType as UserMediaTypeKeys] = fileArray[0].filename;
 			}
 		}
 	}
 
 	await createdUser.save();
-
 	const user = createdUser.toLimitedJSON(2);
-	const token = await createdUser.generateToken();
+	const token = await createdUser.generateToken(req);
 	return res.status(201).send({ user, token });
 });
 
@@ -59,7 +44,7 @@ export const loginUser = wrap(async (req: Request, res: Response) => {
 	);
 
 	const user = userToLimit.toLimitedJSON(2);
-	const token = await userToLimit.generateToken();
+	const token = await userToLimit.generateToken(req);
 
 	return res.status(200).send({ user, token });
 });
@@ -161,40 +146,22 @@ export const patchUserRegular = wrap(async (req: Request, res: Response) => {
 		}
 
 		// Handle file uploads
-		if (req.files && Object.keys(req.files).length) {
-			const files = req.files as {
-				[fieldname: string]: Express.Multer.File[];
-			};
-			const mediaTypes = Object.keys(files);
+		if (req.files) {
+			const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-			for (const mediaType of mediaTypes) {
-				const filesArray = files[mediaType];
-				if (filesArray && filesArray.length > 0) {
-					const file = filesArray[0];
-					const fileFolderPath = path.join(process.cwd(), `/media/${mediaType}s`);
-					let filename = file?.filename;
-					const meta = await fileTypeFromFile(file?.path as string);
-					const newFilename = `${filename}.${meta?.ext}`;
-
-					await fs.rename(
-						`${fileFolderPath}/${filename}`,
-						`${fileFolderPath}/${newFilename}`,
-						() => {},
-					);
-
-					filename = `${fileFolderPath}\\${filename}.${meta?.ext}`;
-
+			for (const [mediaType, fileArray] of Object.entries(files)) {
+				if (fileArray.length > 0) {
 					if (req.user[mediaType as UserMediaTypeKeys]) {
 						await fs.rm(
 							`${req.user[mediaType as UserMediaTypeKeys]}`,
 							() => {},
 						);
 					}
-
-					req.user[mediaType as UserMediaTypeKeys] = filename;
+					req.user[mediaType as UserMediaTypeKeys] = fileArray[0].filename;
 				}
 			}
 		}
+
 		await req.user.save();
 		return res.status(200).send(req.user.toLimitedJSON(2));
 	}

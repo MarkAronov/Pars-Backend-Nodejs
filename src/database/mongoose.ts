@@ -4,7 +4,7 @@ import mongoose from "mongoose";
  * Connects to the MongoDB database using the environment variable MONGODB_URL.
  * Exits the process with a non-zero code if the connection fails or if the URL is not defined.
  */
-export const connect = () => {
+export const databaseConnect = async () => {
 	mongoose.set("strictQuery", true);
 
 	// Get the MongoDB connection URL from environment variables
@@ -15,7 +15,7 @@ export const connect = () => {
 	}
 
 	// Connect to MongoDB
-	mongoose
+	await mongoose
 		.connect(mongoDBUrl)
 		.then(() => {
 			console.log("Successfully connected to MongoDB database");

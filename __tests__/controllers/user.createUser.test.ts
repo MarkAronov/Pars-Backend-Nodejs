@@ -40,14 +40,9 @@ describe("User Creation", async () => {
 	it("should register a new user with the bare minimum parameters", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Password12345678");
 
 		expect(response.status).toBe(201);
 		expect(response.body).toHaveProperty("user", {
@@ -67,16 +62,11 @@ describe("User Creation", async () => {
 
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "Password12345678",
-					displayName: "createUserTest",
-					bio: "yes hello",
-				}),
-			)
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Password12345678")
+			.field("displayName", "createUserTest")
+			.field("bio", "yes hello")
 			.attach("avatar", `${testImagePath}/1.png`)
 			.attach("backgroundImage", `${testImagePath}/2.png`);
 
@@ -112,14 +102,10 @@ describe("User Creation", async () => {
 	it("should not register a user with an existing email", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "premadeUser@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "premadeUser@testing.com")
+			.field("password", "Password12345678");
+
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
 			email: ["Email is being currently used, use a different one"],
@@ -129,14 +115,9 @@ describe("User Creation", async () => {
 	it("should not register a user with invalid email", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest")
+			.field("password", "Password12345678");
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", { email: ["Invalid email"] });
 	});
@@ -144,14 +125,9 @@ describe("User Creation", async () => {
 	it("should not register a user with an existing username", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "premadeUser",
-					email: "createUserTest@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "premadeUser")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Password12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -162,14 +138,9 @@ describe("User Creation", async () => {
 	it("should not register a user with an empty username", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "",
-					email: "createUserTest@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Password12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -180,14 +151,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a username that contains non-alphanumeric characters", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "asd@@",
-					email: "createUserTest@testing.com",
-					password: "Password12345678",
-				}),
-			);
+			.field("username", "asd@@")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Password12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -198,14 +164,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a password that is less than 10 characters long", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "Pa1",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Pa1");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -216,14 +177,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a password that is missing a digit", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "Passworddddd",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "Passworddddd");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -234,14 +190,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a password that is missing an uppercase letter", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "password12345678",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "password12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -252,14 +203,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a password that is missing a lowercase letter", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "PASSWORD12345678",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "PASSWORD12345678");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -270,14 +216,9 @@ describe("User Creation", async () => {
 	it("should not register a user with a password that is missing all of the needed parameters", async () => {
 		const response = await request(app)
 			.post("/user")
-			.field(
-				"content",
-				JSON.stringify({
-					username: "createUserTest",
-					email: "createUserTest@testing.com",
-					password: "@",
-				}),
-			);
+			.field("username", "createUserTest")
+			.field("email", "createUserTest@testing.com")
+			.field("password", "@");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
@@ -291,9 +232,7 @@ describe("User Creation", async () => {
 	});
 
 	it("should not register a user due to missing all of the requested fields", async () => {
-		const response = await request(app)
-			.post("/user")
-			.field("content", JSON.stringify({}));
+		const response = await request(app).post("/user");
 
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("ERROR", {
