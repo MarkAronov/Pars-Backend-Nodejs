@@ -5,6 +5,7 @@ import {
 	validateAndCheckPermissions,
 	validateParams,
 	validatePassword,
+	validatePatchRequests,
 } from ".";
 
 /**
@@ -21,7 +22,7 @@ export const requestCheckerMiddleware = (routeConfig: {
 	optionalParams: string[];
 }) =>
 	wrap(async (req: Request, res: Response, next: NextFunction) => {
-		console.log(routeConfig);
+		req.errorList = {};
 		await validateParams(routeConfig);
 
 		const routePath: string | undefined = req.route?.path;
@@ -35,9 +36,7 @@ export const requestCheckerMiddleware = (routeConfig: {
 			await validateAndCheckPermissions.topic(req);
 		}
 
-		// await checkDuplicateFiles();
-		// await validatePatchRequests();
-		// await validateUploadedFiles();
+		await validatePatchRequests();
 		await validatePassword();
 		next();
 	});

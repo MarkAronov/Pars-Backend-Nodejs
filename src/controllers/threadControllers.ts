@@ -6,7 +6,6 @@ import mongoose from "mongoose";
 import { createPostTemplate } from "./postControllers";
 
 export const createThread = wrap(async (req: Request, res: Response) => {
-	console.log(req.body);
 	// Create a new Post instance with the request body and user ID
 	const thread = new Thread({ ...req.body }) as ThreadType;
 	req.body.thread = thread._id;

@@ -3,8 +3,8 @@ import { wrap } from "@/utils";
 import bcrypt from "bcryptjs";
 import type { NextFunction, Response } from "express";
 
-export const validatePassword = () => wrap(
-	async (req: Request, res: Response, next: NextFunction) => {
+export const validatePassword = () =>
+	wrap(async (req: Request, res: Response, next: NextFunction) => {
 		const currentUser = req.user;
 		const newPassword = req.body.newPassword;
 
@@ -23,5 +23,4 @@ export const validatePassword = () => wrap(
 		}
 
 		next();
-	},
-);
+	});

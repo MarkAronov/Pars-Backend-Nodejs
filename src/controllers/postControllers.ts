@@ -11,7 +11,6 @@ import mongoose from "mongoose";
 
 export const createPostTemplate = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID
-	console.log(`post ${req.body}`)
 	const post = new Post({ ...req.body, user: req?.user?._id }) as PostType;
 
 	// Handle mentioned parents

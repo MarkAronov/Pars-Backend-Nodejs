@@ -45,6 +45,7 @@ export const errorHandlerMiddleware = async (
 		"VerificationError",
 	];
 
+	console.log(err);
 	// Handle requests for non-existent media files
 	if (req?.route?.path === "/media/:mediatype/:mediafile") {
 		return res.status(404).send({
