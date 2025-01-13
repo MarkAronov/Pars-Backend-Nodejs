@@ -102,6 +102,11 @@ const UserSchema = new mongoose.Schema<
 			default: "",
 			trim: true,
 		},
+		role: {
+			type: String,
+			enum: ["user", "moderator", "admin"],
+			default: "user",
+		},
 		sessions: [
 			{
 				token: {
@@ -140,6 +145,22 @@ const UserSchema = new mongoose.Schema<
 			default: null,
 		},
 		backgroundImage: {
+			type: String,
+			default: null,
+		},
+		verified: {
+			type: Boolean,
+			default: false,
+		},
+		verificationToken: {
+			type: String,
+			default: null,
+		},
+		verificationTokenExpires: {
+			type: Date,
+			default: null,
+		},
+		passwordResetToken: {
 			type: String,
 			default: null,
 		},
@@ -301,7 +322,8 @@ UserSchema.pre(
 );
 
 // Apply uniqueValidator plugin
-UserSchema.plugin(uniqueValidator, { message: "dupe" });
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+UserSchema.plugin(uniqueValidator as any, { message: "dupe" });
 
 // Export the user model
 export const User = mongoose.model<IUser, UserModel>("User", UserSchema);

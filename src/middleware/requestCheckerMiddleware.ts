@@ -1,5 +1,5 @@
 import type { Request } from "@/types";
-import { wrap } from "@/utils";
+import { ErrorAO, wrap } from "@/utils";
 import type { NextFunction, Response } from "express";
 import {
 	validateAndCheckPermissions,
@@ -29,14 +29,15 @@ export const requestCheckerMiddleware = (routeConfig: {
 		if (routePath?.includes("/user")) {
 			await validateAndCheckPermissions.user(req);
 		} else if (routePath?.includes("/post")) {
-			await validateAndCheckPermissions.post(req);
+			req.post = await validateAndCheckPermissions.post(req);
 		} else if (routePath?.includes("/thread")) {
-			await validateAndCheckPermissions.thread(req);
+			req.thread = await validateAndCheckPermissions.thread(req);
 		} else if (routePath?.includes("/topic")) {
-			await validateAndCheckPermissions.topic(req);
+			req.topic = await validateAndCheckPermissions.topic(req);
 		}
 
 		await validatePatchRequests();
 		await validatePassword();
+
 		next();
 	});

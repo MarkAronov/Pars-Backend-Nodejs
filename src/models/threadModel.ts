@@ -34,6 +34,35 @@ const ThreadSchema = new mongoose.Schema<
 			ref: "Topic",
 			required: true,
 		},
+		originalPost: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Post",
+			required: true,
+		},
+		originalPoster: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "User",
+			required: true,
+		},
+		pinned: {
+			type: Boolean,
+			default: false,
+			required: true,
+		},
+		locked: {
+			type: Boolean,
+			default: false,
+			required: true,
+		},
+		expiresAt: {
+			type: Date,
+			required: false,
+		},
+		pageNumber: {
+			type: Number,
+			default: 1,
+			required: true,
+		},
 	},
 	schemaOptions,
 );
@@ -42,12 +71,6 @@ ThreadSchema.virtual("posts", {
 	ref: "Post",
 	localField: "_id",
 	foreignField: "thread",
-});
-
-ThreadSchema.method("toCustomJSON", async function toCustomJSON() {
-	await this.populate("mentioningChildren");
-	const postObject = await this.toObject({ virtuals: true });
-	return postObject;
 });
 
 ThreadSchema.pre(

@@ -9,7 +9,7 @@ export const wrap =
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		(...args: any) =>
 			fn(...args).catch(args[2]);
-		
+
 /**
  * Removes duplicate elements from an array.
  * @param {string[]} arr - The input array.

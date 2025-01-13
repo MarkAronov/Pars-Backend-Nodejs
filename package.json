@@ -24,6 +24,7 @@
 	},
 	"dependencies": {
 		"@swc/helpers": "^0.5.15",
+		"@types/body-parser": "^1.19.5",
 		"@types/bun": "^1.1.14",
 		"bcryptjs": "^2.4.3",
 		"cors": "^2.8.5",

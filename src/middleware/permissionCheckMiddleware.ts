@@ -7,7 +7,6 @@ import type {
 	UserType,
 } from "@/types";
 import { ErrorAO, wrap } from "@/utils";
-import type mongoose from "mongoose";
 
 const validateUser = wrap(async (req: Request) => {
 	const user = await User.findOne({ username: req.params.username }).catch(
@@ -30,13 +29,15 @@ const validatePost = wrap(async (req: Request) => {
 });
 
 const validateThread = wrap(async (req: Request) => {
-	const thread = await Thread.findById(req.params.id).catch(() => {
-		throw new ErrorAO(
-			{ MAIN: ["Malformed thread query"] },
-			"DatabaseError",
-			500,
-		);
-	});
+	const thread = await Thread.findById(req.params.id)
+		.populate("posts")
+		.catch(() => {
+			throw new ErrorAO(
+				{ MAIN: ["Malformed thread query"] },
+				"DatabaseError",
+				500,
+			);
+		});
 	return thread;
 });
 
@@ -66,9 +67,7 @@ const checkUserPermissions = (req: Request, user: UserType) => {
 		}
 		if (
 			currentUser &&
-			!(user._id as mongoose.Types.ObjectId).equals(
-				currentUser._id as mongoose.Types.ObjectId,
-			) &&
+			(user._id !== currentUser._id || currentUser.role !== "admin") &&
 			reqMethod !== "GET"
 		) {
 			throw new ErrorAO(
@@ -97,9 +96,7 @@ const checkPostPermissions = (req: Request, post: PostType) => {
 		}
 		if (
 			currentUser &&
-			!(post.user._id as mongoose.Types.ObjectId).equals(
-				currentUser._id as mongoose.Types.ObjectId,
-			) &&
+			(post.user._id !== currentUser._id || currentUser.role === "user") &&
 			reqMethod !== "GET"
 		) {
 			throw new ErrorAO(
@@ -128,9 +125,8 @@ const checkThreadPermissions = (req: Request, thread: ThreadType) => {
 		}
 		if (
 			currentUser &&
-			!(thread.posts[0].user._id as mongoose.Types.ObjectId).equals(
-				currentUser._id as mongoose.Types.ObjectId,
-			) &&
+			(thread.originalPoster !== currentUser._id ||
+				currentUser.role === "user") &&
 			reqMethod !== "GET"
 		) {
 			throw new ErrorAO(
@@ -145,6 +141,7 @@ const checkThreadPermissions = (req: Request, thread: ThreadType) => {
 };
 
 const checkTopicPermissions = (req: Request, topic: TopicType) => {
+	const currentUser = req.user;
 	const reqMethod = req.method;
 	if (req.params.name) {
 		if (!topic) {
@@ -156,15 +153,15 @@ const checkTopicPermissions = (req: Request, topic: TopicType) => {
 				404,
 			);
 		}
-		// if (reqMethod !== "GET") {
-		// 	throw new ErrorAO(
-		// 		{
-		// 			MAIN: ["You are not allowed to change/delete this topic"],
-		// 		},
-		// 		"AuthorizationError",
-		// 		403,
-		// 	);
-		// }
+		if (currentUser && currentUser.role !== "admin" && reqMethod !== "GET") {
+			throw new ErrorAO(
+				{
+					MAIN: ["You are not allowed to change/delete this topic"],
+				},
+				"AuthorizationError",
+				403,
+			);
+		}
 	}
 };
 

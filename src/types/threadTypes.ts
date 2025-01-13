@@ -4,6 +4,12 @@ import type { PostType } from ".";
 // Thread Related Types
 export interface IThread {
 	topic: Types.ObjectId;
+	originalPost: Types.ObjectId;
+	originalPoster?: Types.ObjectId;
+	pinned?: boolean;
+	locked?: boolean;
+	expiresAt?: Date;
+	pageNumber?: number;
 }
 
 export interface IThreadVirtuals {

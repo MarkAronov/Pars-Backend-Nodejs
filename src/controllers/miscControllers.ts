@@ -66,7 +66,6 @@ export const search = wrap(async (req: Request, res: Response) => {
 
 		results.users = userSearchResults;
 		results.posts = postSearchResults;
-
 	}
 	return res.status(200).send(results);
 });

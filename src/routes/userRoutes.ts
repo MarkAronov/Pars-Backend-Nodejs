@@ -15,10 +15,7 @@ import {
 	patchUserPassword,
 	patchUserRegular,
 } from "@/controllers";
-import {
-	authMiddleware,
-	requestCheckerMiddleware,
-} from "@/middleware";
+import { authMiddleware, requestCheckerMiddleware } from "@/middleware";
 
 const userOptionalParams = [
 	"displayName",

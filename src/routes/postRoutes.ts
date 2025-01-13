@@ -61,7 +61,7 @@ postRoutes.patch(
 	authMiddleware, // Middleware for authentication
 	requestCheckerMiddleware({
 		requiredParams: [],
-		optionalParams: [...postParams, "filesToRemove"]
+		optionalParams: [...postParams, "filesToRemove"],
 	}), // Middleware for checking parameters
 	patchPost,
 );

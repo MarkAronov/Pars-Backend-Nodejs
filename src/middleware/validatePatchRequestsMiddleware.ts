@@ -1,11 +1,12 @@
 import type { Request } from "@/types";
-import { filterDupes, wrap } from "@/utils";
+import { ErrorAO, filterDupes, wrap } from "@/utils";
 import bcrypt from "bcryptjs";
 import type { NextFunction, Response } from "express";
 import _ from "lodash";
 
 export const validatePatchRequests = async () =>
 	wrap(async (req: Request, res: Response, next: NextFunction) => {
+		const errorList: { [key: string]: string[] } = {};
 		const reqKeys = [
 			...(req.body ? Object.keys(req.body) : []),
 			...(req.files ? Object.keys(req.files) : []),
@@ -32,9 +33,9 @@ export const validatePatchRequests = async () =>
 						!post?.media.every((file) => filesToRemove.includes(file)) &&
 						mediaType !== post?.mediaType
 					) {
-						req.errorList.push(
+						errorList.media = [
 							"You can't have multiple media types in the same post",
-						);
+						];
 					}
 				}
 
@@ -52,11 +53,15 @@ export const validatePatchRequests = async () =>
 							req.body[reqKey],
 						))
 				) {
-					req.errorList.push(
+					errorList[errorKey] = [
 						`${errorKey} has the same value as what's currently stored, try another.`,
-					);
+					];
 				}
 			}
+		}
+
+		if (Object.keys(errorList).length) {
+			throw new ErrorAO(errorList, "ParameterError", 400);
 		}
 		next();
 	});

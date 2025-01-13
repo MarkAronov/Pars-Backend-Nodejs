@@ -8,8 +8,7 @@ export const validateParams = (routeConfig: {
 }) =>
 	wrap(async (req: Request, res: Response, next: NextFunction) => {
 		const errorList: { [key: string]: string[] } = {};
-		console.log("Validating params");
-		console.log(routeConfig)
+
 		const reqKeys = [
 			...(req.body ? Object.keys(req.body) : []),
 			...(req.files ? Object.keys(req.files) : []),

@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import type {
 	HydratedDocument,
 	Model,
@@ -5,26 +6,30 @@ import type {
 	Schema,
 } from "mongoose";
 import type { PostType } from "./postTypes";
-import type { Request } from "express";
 // User Related Types
 
 // Define the user schema interface
 export interface IUser {
-	[x: string]: unknown;
 	username?: string;
 	displayName?: string;
 	email?: string;
 	password?: string;
 	bio?: string | null;
-  sessions: {
-    token: string;
-    createdAt: Date;
-    userAgent: string;
-    ipAddress?: string;
-    deviceInfo?: string;
-    location?: string;
-    expiresAt?: Date;
-  }[];	avatar?: string | null;
+	verified?: boolean;
+	verificationToken?: string;
+	verificationTokenExpires?: Date;
+	passwordResetToken?: string;
+	role?: "user" | "moderator" | "admin";
+	sessions: {
+		token: string;
+		createdAt: Date;
+		userAgent: string;
+		ipAddress?: string;
+		deviceInfo?: string;
+		location?: string;
+		expiresAt?: Date;
+	}[];
+	avatar?: string | null;
 	backgroundImage?: string | null;
 	settings?: { hideWhenMade?: boolean; hidePosts?: boolean };
 	formerPasswords?: string[]; // Stores hashed passwords
@@ -40,7 +45,7 @@ export interface IUserVirtuals {
 
 // Define methods for the user schema
 export interface IUserMethods {
-	generateToken(req: Request): Promise<string>;	// Generates a JWT token
+	generateToken(req: Request): Promise<string>; // Generates a JWT token
 	toLimitedJSON(
 		limitLevel: number,
 	): HydratedDocument<IUser, IUserMethods & IUserVirtuals>; // Returns user data with limited fields

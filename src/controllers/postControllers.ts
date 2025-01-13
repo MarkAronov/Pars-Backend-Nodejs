@@ -1,13 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileTypeFromFile } from "file-type";
 
 import type { Response } from "express";
 
-import { Post } from "@/models";
+import { Post, Thread } from "@/models";
 import type { PostType, Request } from "@/types";
 import { filterDupes, wrap } from "@/utils";
-import mongoose from "mongoose";
 
 export const createPostTemplate = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID
@@ -52,20 +50,17 @@ export const createPost = wrap(async (req: Request, res: Response) => {
 
 export const getAllPosts = wrap(async (req: Request, res: Response) => {
 	// Fetch all posts from the database
-	const posts = await Post.find({});
-	return res.status(200).send(posts);
+	return res.status(200).send(await Post.find({}));
 });
 
 export const getOnePost = wrap(async (req: Request, res: Response) => {
 	// Fetch the post by ID and return the full post data
-	const post = (await Post.findById(req.params.id)) as PostType;
-	const fullPost = await post.toCustomJSON();
-	return res.status(201).send(fullPost);
+	return res.status(201).send(await req.post?.toCustomJSON());
 });
 
 export const patchPost = wrap(async (req: Request, res: Response) => {
 	// Fetch the post by ID and update its fields
-	const post = (await Post.findById(req.params.id)) as PostType;
+	const post = req.post;
 	let fullPost: PostType | null = null;
 	if (post) {
 		let mediaArray: string[] = post.media;
@@ -132,9 +127,13 @@ export const patchPost = wrap(async (req: Request, res: Response) => {
 	return res.status(200).send(fullPost);
 });
 
+// Find the post by ID and delete it
 export const deletePost = wrap(async (req: Request, res: Response) => {
-	// Find the post by ID and delete it
-	const post = await Post.findById(req.params.id);
-	await post?.deleteOne();
+	const thread = await Thread.findById(req.post?.thread);
+	if (req.post?.thread.toString() === thread?._id.toString()) {
+		await thread?.deleteOne();
+	} else {
+		await req.post?.deleteOne();
+	}
 	return res.status(200).send();
 });

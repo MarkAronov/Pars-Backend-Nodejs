@@ -81,7 +81,6 @@ export const validateUploadedFiles = wrap(
 			}
 		}
 		if (Object.keys(errorList).length) {
-			console.log(errorList);
 			throw new ErrorAO(errorList, "ParameterError", 400);
 		}
 		await saveFilesToDisk(req, res, next);
