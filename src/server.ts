@@ -28,13 +28,6 @@ const server: http.Server = http.createServer(app);
 const io: socketio.Server = new socketio.Server();
 io.attach(server);
 
-io.on("connection", (socket) => {
-	console.log("a user connected");
-	socket.on("disconnect", () => {
-		console.log("user disconnected");
-	});
-});
-
 /**
  * Listen on provided port, on all network interfaces.
  */

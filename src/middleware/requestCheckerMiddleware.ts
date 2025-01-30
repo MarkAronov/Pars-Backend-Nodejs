@@ -1,12 +1,13 @@
-import type { Request } from "@/types";
-import { ErrorAO, wrap } from "@/utils";
 import type { NextFunction, Response } from "express";
+import type { Request } from "src/commom/generalTypes";
+import { wrap } from "src/utils/generalUtils";
+import { validateAndCheckPermissions } from "src/utils/permissionUtils";
 import {
-	validateAndCheckPermissions,
 	validateParams,
 	validatePassword,
 	validatePatchRequests,
-} from ".";
+	validatePostRequests,
+} from "src/utils/validationUtils";
 
 /**
  * Middleware to check the parameters and files in the request.
@@ -18,26 +19,30 @@ import {
  * @param {NextFunction} next - The next middleware function.
  */
 export const requestCheckerMiddleware = (routeConfig: {
-	requiredParams: string[];
-	optionalParams: string[];
+	requiredParams: string[] | { [key: string]: string[] };
+	optionalParams: string[] | { [key: string]: string[] };
 }) =>
 	wrap(async (req: Request, res: Response, next: NextFunction) => {
 		req.errorList = {};
-		await validateParams(routeConfig);
+		await validateParams(req, routeConfig);
 
 		const routePath: string | undefined = req.route?.path;
 		if (routePath?.includes("/user")) {
 			await validateAndCheckPermissions.user(req);
 		} else if (routePath?.includes("/post")) {
-			req.post = await validateAndCheckPermissions.post(req);
+			const post = await validateAndCheckPermissions.post(req);
+			req.post = post === null ? undefined : post;
 		} else if (routePath?.includes("/thread")) {
-			req.thread = await validateAndCheckPermissions.thread(req);
+			const thread = await validateAndCheckPermissions.thread(req);
+			req.thread = thread === null ? undefined : thread;
 		} else if (routePath?.includes("/topic")) {
-			req.topic = await validateAndCheckPermissions.topic(req);
+			const topic = await validateAndCheckPermissions.topic(req);
+			req.topic = topic === null ? undefined : topic;
 		}
 
-		await validatePatchRequests();
-		await validatePassword();
+		await validatePostRequests(req);
+		await validatePatchRequests(req);
+		await validatePassword(req);
 
 		next();
 	});

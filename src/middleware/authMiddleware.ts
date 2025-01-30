@@ -1,8 +1,8 @@
-import { User } from "@/models/userModel";
-import type { Request } from "@/types";
-import { ErrorAO, wrap } from "@/utils";
 import type { NextFunction, Response } from "express";
 import jsonwebtoken, { type Secret } from "jsonwebtoken";
+import { User } from "src/api/user/user.model";
+import type { Request } from "src/commom/generalTypes";
+import { ErrorAO, wrap } from "src/utils/generalUtils";
 
 /**
  * Middleware function for authenticating a user via a JWT token.
@@ -42,9 +42,10 @@ export const authMiddleware = wrap(
 		}
 
 		// Find the user associated with the token
+		console.log(decodedToken.id);
 		const user = await User.findOne({
 			_id: decodedToken.id as string,
-			"tokens.token": encodedToken,
+			"sessions.token": encodedToken,
 		});
 
 		// Throw an error if the user is not found

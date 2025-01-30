@@ -1,12 +1,12 @@
 import * as crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { Request } from "@/types";
-import { ErrorAO, wrap } from "@/utils";
 import type { NextFunction, Response } from "express";
 import { fileTypeFromBuffer } from "file-type/core";
 import multer from "multer";
-import type { MulterError } from "multer";
+import type { Request } from "src/commom/generalTypes";
+import { ErrorAO, wrap } from "src/utils/generalUtils";
+
 /// MULTER SETTINGS ///
 const megabyte = 1000000;
 

@@ -1,8 +1,8 @@
 import fs from "node:fs";
-import type { Request, ValidationError } from "@/types";
-import type { ErrorAO } from "@/utils";
 import type { NextFunction, Response } from "express";
 import type { MulterError } from "multer";
+import type { Request, ValidationError } from "src/commom/generalTypes";
+import type { ErrorAO } from "src/utils/generalUtils";
 
 /**
  * Error-handling middleware for Express applications.
@@ -44,7 +44,6 @@ export const errorHandlerMiddleware = async (
 		"ValidationError",
 		"VerificationError",
 	];
-
 	console.log(err);
 	// Handle requests for non-existent media files
 	if (req?.route?.path === "/media/:mediatype/:mediafile") {
