@@ -3,15 +3,15 @@ import path from "node:path";
 import type { Response } from "express";
 import type { Request } from "src/commom/generalTypes";
 import { ErrorAO, wrap } from "src/utils/generalUtils";
-import {
-	type IUser,
-	User,
-	type UserImortantPatchTypeKeys,
-	type UserMediaTypeKeys,
-	type UserPartialDeleteTypeKeys,
-	type UserRegularPatchTypeKeys,
-	type UserType,
-} from "./user.model";
+import { User } from "./user.model";
+import type {
+	IUser,
+	UserImortantPatchTypeKeys,
+	UserMediaTypeKeys,
+	UserPartialDeleteTypeKeys,
+	UserRegularPatchTypeKeys,
+	UserType,
+} from "./user.types";
 
 export const createUser = wrap(async (req: Request, res: Response) => {
 	const userData = req.body;
@@ -31,7 +31,7 @@ export const createUser = wrap(async (req: Request, res: Response) => {
 
 	await createdUser.save();
 	const user = createdUser.toLimitedJSON(1);
-	const token = (await createdUser.generateSession(req)).token;
+	const token = await createdUser.generateToken(req);
 	return res.status(201).send({ user, token });
 });
 
@@ -42,15 +42,15 @@ export const loginUser = wrap(async (req: Request, res: Response) => {
 	);
 
 	const user = userToLimit.toLimitedJSON(1);
-	const token = (await userToLimit.generateSession(req)).token;
+	const token = await userToLimit.generateToken(req);
 
 	return res.status(200).send({ user, token });
 });
 
 export const logoutUser = wrap(async (req: Request, res: Response) => {
 	if (req.user) {
-		req.user.sessions = req.user.sessions?.filter(
-			(session: { token: string | undefined }) => session.token !== req.token,
+		req.user.tokens = req.user.tokens?.filter(
+			(token: { token: string | undefined }) => token.token !== req.token,
 		);
 
 		await req.user.save();
@@ -61,7 +61,7 @@ export const logoutUser = wrap(async (req: Request, res: Response) => {
 
 export const logoutAllUser = wrap(async (req: Request, res: Response) => {
 	if (req.user) {
-		req.user.sessions = [];
+		req.user.tokens = [];
 		await req.user.save();
 	}
 	return res.status(200).send();
@@ -172,7 +172,7 @@ export const deleteUser = wrap(async (req: Request, res: Response) => {
 });
 
 export const deleteUserPartial = wrap(async (req: Request, res: Response) => {
-	if (req.user && req.body.requestedFields) {
+	if (req.user && req.params) {
 		const userKeys = Object.keys(req.user.toLimitedJSON(0));
 		for (const userKey of userKeys) {
 			if (req.body.requestedFields.includes(userKey)) {

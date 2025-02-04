@@ -1,8 +1,8 @@
 import type { Request as expressRequest } from "express";
-import type { PostType } from "src/api/post/post.model";
-import type { ThreadType } from "src/api/thread/thread.model";
-import type { TopicType } from "src/api/topic/topic.model";
-import type { UserType } from "src/api/user/user.model";
+import type { PostType } from "src/api/post/post.types";
+import type { ThreadType } from "src/api/thread/thread.types";
+import type { TopicType } from "src/api/topic/topic.types";
+import type { UserType } from "src/api/user/user.types";
 
 // Interface for Route Configuration
 export interface RouteConfig {

@@ -1,31 +1,14 @@
 import fs from "node:fs";
 import mongoose from "mongoose";
-import type { HydratedDocument, Model, Types } from "mongoose";
-
-// Post Related Types
-export interface IPost {
-	title: string;
-	content: string;
-	topic: Types.ObjectId;
-	thread: Types.ObjectId;
-	user: Types.ObjectId;
-	mentionedParents: Types.ObjectId[];
-	media: string[];
-	mediaType: string | null;
-	edited: boolean;
-}
-
-export interface IPostVirtuals {
-	mentioningChildren: Types.ObjectId[];
-}
-
-export interface IPostMethods {
-	toCustomJSON(): HydratedDocument<IPost, IPostMethods & IPostVirtuals>;
-}
-
-export type PostModel = Model<IPost, object, IPostMethods & IPostVirtuals>;
-
-export type PostType = HydratedDocument<IPost, IPostMethods & IPostVirtuals>;
+import { POST_RULES } from "./post.constants";
+import type {
+	IPost,
+	IPostMethods,
+	IPostVirtuals,
+	PostModel,
+	PostType,
+} from "./post.types";
+import { validateAttachments, validatePostContent } from "./post.validators";
 
 const schemaOptions: object = {
 	toJSON: {
@@ -55,8 +38,12 @@ const PostSchema = new mongoose.Schema<
 		},
 		content: {
 			type: String,
-			required: false,
-			trim: true,
+			required: true,
+			maxLength: [
+				POST_RULES.MAX_CONTENT_LENGTH,
+				`Content cannot be longer than ${POST_RULES.MAX_CONTENT_LENGTH} characters`,
+			],
+			validate: validatePostContent,
 		},
 		topic: {
 			type: mongoose.Schema.Types.ObjectId,
@@ -85,7 +72,14 @@ const PostSchema = new mongoose.Schema<
 		mediaType: {
 			default: null,
 			type: String,
+			validate: {
+				validator: (files: Express.Multer.File[]) => {
+					if (files?.length) validateAttachments(files);
+					return true;
+				},
+			},
 		},
+
 		edited: {
 			type: Boolean,
 			required: true,

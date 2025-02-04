@@ -63,7 +63,7 @@ usersRoutes.post(
 	logoutUser,
 );
 
-// POST request for logging the user out from all sessions.
+// POST request for logging the user out from all tokens.
 usersRoutes.post(
 	"/user/logoutall",
 	authMiddleware, // Middleware for authentication
@@ -156,7 +156,7 @@ usersRoutes.delete(
 	"/user/partial/:mediatype:",
 	authMiddleware, // Middleware for authentication
 	requestCheckerMiddleware({
-		requiredParams: { deleteParams: ["avatar", "backgroundImage"] },
+		requiredParams: ["avatar", "backgroundImage"],
 		optionalParams: [],
 	}),
 	deleteUserPartial,

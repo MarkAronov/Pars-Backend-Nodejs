@@ -5,7 +5,8 @@ import type { Response } from "express";
 import type { Request } from "src/commom/generalTypes";
 import { filterDupes, wrap } from "src/utils/generalUtils";
 import { Thread } from "../thread/thread.model";
-import { Post, type PostType } from "./post.model";
+import { Post } from "./post.model";
+import type { PostType } from "./post.types";
 
 export const createPostTemplate = wrap(async (req: Request, res: Response) => {
 	// Create a new Post instance with the request body and user ID

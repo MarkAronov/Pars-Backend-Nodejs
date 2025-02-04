@@ -45,7 +45,7 @@ export const authMiddleware = wrap(
 		console.log(decodedToken.id);
 		const user = await User.findOne({
 			_id: decodedToken.id as string,
-			"sessions.token": encodedToken,
+			"tokens.token": encodedToken,
 		});
 
 		// Throw an error if the user is not found

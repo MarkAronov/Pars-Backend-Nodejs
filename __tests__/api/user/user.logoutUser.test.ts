@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
-import app from "../../../src/app";
+import { beforeEach, describe, expect, it } from "vitest";
 import { User } from "../../../src/api/user/user.model";
+import app from "../../../src/app";
 
 describe("User Logout", async () => {
 	const userID = new mongoose.Types.ObjectId();
@@ -12,7 +12,7 @@ describe("User Logout", async () => {
 		email: "logoutUserTest@testing.com",
 		password: "Password123@",
 		_id: userID,
-		sessions: [
+		tokens: [
 			{
 				token: jwt.sign(
 					{ id: userID },
@@ -32,7 +32,7 @@ describe("User Logout", async () => {
 	});
 
 	it("should log out a user", async () => {
-		const token = testUser.sessions[0].token;
+		const token = testUser.tokens[0].token;
 		const response = await request(app)
 			.post("/user/logout")
 			.set("Authorization", `Bearer ${token}`)
@@ -44,11 +44,11 @@ describe("User Logout", async () => {
 		const verifyResponse = await request(app)
 			.get("/user/self")
 			.set("Authorization", `Bearer ${token}`);
-		
+
 		expect(verifyResponse.status).toBe(401);
 
 		const user = await User.findById(testUser._id);
-		expect(user?.sessions?.length).toBe(0);
+		expect(user?.tokens?.length).toBe(0);
 	});
 
 	it("should not log out a user without authorization", async () => {
@@ -67,8 +67,8 @@ describe("User Logout", async () => {
 	});
 
 	describe("User Logout All", () => {
-		it("should log out a user from all sessions", async () => {
-			const token = testUser.sessions[0].token;
+		it("should log out a user from all tokens", async () => {
+			const token = testUser.tokens[0].token;
 			const response = await request(app)
 				.post("/user/logoutAll")
 				.set("Authorization", `Bearer ${token}`)
@@ -80,20 +80,20 @@ describe("User Logout", async () => {
 			const verifyResponse = await request(app)
 				.get("/user/self")
 				.set("Authorization", `Bearer ${token}`);
-			
+
 			expect(verifyResponse.status).toBe(401);
 
 			const user = await User.findById(testUser._id);
-			expect(user?.sessions?.length).toBe(0);
+			expect(user?.tokens?.length).toBe(0);
 		});
 
-		it("should not log out a user from all sessions without authorization", async () => {
+		it("should not log out a user from all tokens without authorization", async () => {
 			const response = await request(app).post("/user/logoutAll").send();
 
 			expect(response.status).toBe(401);
 		});
 
-		it("should not log out a user from all sessions with an invalid token", async () => {
+		it("should not log out a user from all tokens with an invalid token", async () => {
 			const response = await request(app)
 				.post("/user/logoutAll")
 				.set("Authorization", "Bearer invalidtoken")

@@ -3,34 +3,11 @@ import path from "node:path";
 // Import necessary modules and dependencies
 import mongoose from "mongoose";
 import uniqueValidator from "mongoose-unique-validator"; // Plugin for unique field validation
+import { TOPIC_RULES } from "./topic.constants";
+import { validateTopicName, validateTopicDescription, validateTopicMedia } from "./topic.validators";
+import type { ITopic, TopicModel, ITopicMethods, ITopicVirtuals, TopicType } from "./topic.types";
+import { Thread} from "../thread/thread.model";
 
-import type { HydratedDocument, Model } from "mongoose";
-import type { PostType } from "../post/post.model";
-import { Thread, type ThreadType } from "../thread/thread.model";
-
-// Topic Related Types
-export interface ITopic {
-	name: string;
-	description: string;
-	cover: string;
-}
-
-export interface ITopicVirtuals {
-	threads: ThreadType[];
-	posts: PostType[];
-}
-
-export interface ITopicMethods {
-	toCustomJSON(): HydratedDocument<ITopic, ITopicMethods & ITopicVirtuals>;
-}
-export type TopicMediaTypeKey = "cover";
-
-export type TopicModel = Model<ITopic, object, ITopicMethods & ITopicVirtuals>;
-
-export type TopicType = HydratedDocument<
-	ITopic,
-	ITopicMethods & ITopicVirtuals
->;
 
 const schemaOptions: object = {
 	toJSON: {
@@ -56,11 +33,16 @@ const TopicSchema = new mongoose.Schema<
 			type: String,
 			required: true,
 			unique: true,
+			minLength: [TOPIC_RULES.MIN_NAME_LENGTH, `Name must be at least ${TOPIC_RULES.MIN_NAME_LENGTH} characters`],
+			maxLength: [TOPIC_RULES.MAX_NAME_LENGTH, `Name cannot be longer than ${TOPIC_RULES.MAX_NAME_LENGTH} characters`],
+			validate: validateTopicName
 		},
 		description: {
 			type: String,
 			required: false,
 			trim: true,
+			maxLength: [TOPIC_RULES.MAX_DESCRIPTION_LENGTH, `Description cannot be longer than ${TOPIC_RULES.MAX_DESCRIPTION_LENGTH} characters`],
+			validate: validateTopicDescription
 		},
 		cover: {
 			type: String,
@@ -81,6 +63,7 @@ TopicSchema.virtual("posts", {
 	localField: "_id",
 	foreignField: "topic",
 });
+
 
 TopicSchema.pre(
 	"deleteOne",

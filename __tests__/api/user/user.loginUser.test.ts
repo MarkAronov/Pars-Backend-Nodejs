@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
-import app from "../../../src/app";
+import { beforeEach, describe, expect, it } from "vitest";
 import { User } from "../../../src/api/user/user.model";
+import app from "../../../src/app";
 
 describe("User Login", async () => {
 	const userID = new mongoose.Types.ObjectId();
@@ -12,15 +12,17 @@ describe("User Login", async () => {
 		email: "loginUserTest@testing.com",
 		password: "Password123@",
 		_id: userID,
-		sessions: [{
-			token: jwt.sign(
-				{ id: userID },
-				process.env.JWT_STRING || "default_jwt_secret",
-				{
-					expiresIn: "14d",
-				},
-			),
-		}],
+		tokens: [
+			{
+				token: jwt.sign(
+					{ id: userID },
+					process.env.JWT_STRING || "default_jwt_secret",
+					{
+						expiresIn: "14d",
+					},
+				),
+			},
+		],
 	};
 
 	beforeEach(async () => {
@@ -43,7 +45,7 @@ describe("User Login", async () => {
 		const verifyResponse = await request(app)
 			.get("/user/self")
 			.set("Authorization", `Bearer ${response.body.token}`);
-		
+
 		expect(verifyResponse.status).toBe(200);
 		expect(verifyResponse.body).toHaveProperty("username", "loginUserTest");
 	});

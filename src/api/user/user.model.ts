@@ -2,108 +2,22 @@ import fs from "node:fs";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import jwt, { type Secret } from "jsonwebtoken";
-// Import necessary modules and dependencies
-import mongoose, {
-	type CallbackWithoutResultAndOptionalError as NextFunction,
-} from "mongoose";
-import uniqueValidator from "mongoose-unique-validator"; // Plugin for unique field validation
-
+import mongoose from "mongoose";
+import uniqueValidator from "mongoose-unique-validator";
 import _ from "lodash";
-import validator from "validator";
-
-import type {
-	HydratedDocument,
-	Model,
-	Date as MongooseDate,
-	Schema,
-} from "mongoose";
-import type { Request } from "../../commom/generalTypes";
+import { Post } from "../post/post.model";
 import { ErrorAO } from "../../utils/generalUtils";
-import { Post, type PostType } from "../post/post.model";
-// User Related Types
+import { validateUsername, validatePassword, validateEmail } from './user.validators';
+import { USERNAME_RULES, DISPLAY_NAME_MAX_LENGTH, EMAIL_MAX_LENGTH, BIO_MAX_LENGTH, TOKEN_EXPIRY } from './user.constants';
+import type { 
+    IUser, 
+    IUserMethods, 
+    IUserVirtuals, 
+    UserModel, 
+    UserType 
+} from "./user.types";
+import type { CallbackWithoutResultAndOptionalError } from 'mongoose';
 
-// Define the user schema interface
-export interface IUser {
-	username?: string;
-	displayName?: string;
-	email?: string;
-	password?: string;
-	bio?: string | null;
-	verified?: boolean;
-	verificationToken?: string;
-	verificationTokenExpires?: Date;
-	passwordResetToken?: string;
-	role?: "user" | "moderator" | "admin";
-	sessions: {
-		token: string;
-		createdAt: Date;
-		userAgent: string;
-		ipAddress?: string;
-		deviceInfo?: string;
-		location?: string;
-		expiresAt?: Date;
-	}[];
-	avatar?: string | null;
-	backgroundImage?: string | null;
-	settings?: { hideWhenMade?: boolean; hidePosts?: boolean };
-	formerPasswords?: string[]; // Stores hashed passwords
-	createdAt?: MongooseDate;
-	updatedAt?: MongooseDate;
-	schemaVersion?: number;
-}
-
-// Define virtual properties for the user schema
-export interface IUserVirtuals {
-	posts: PostType[]; // Array of user's posts
-}
-
-// Define methods for the user schema
-export interface IUserMethods {
-	generateSession(req: Request): {
-		token: string;
-		createdAt: Date;
-		userAgent: string;
-		ipAddress: string | undefined;
-		deviceInfo: string;
-		location: string;
-		expiresAt: Date;
-	}; // Generates a JWT token
-	toLimitedJSON(
-		limitLevel: number,
-	): HydratedDocument<IUser, IUserMethods & IUserVirtuals>; // Returns user data with limited fields
-	verifyPassword(currentPassword: string): null; // Verifies user password
-}
-
-// Define the user model interface
-export interface UserModel
-	extends Model<IUser, Record<string, never>, IUserMethods, IUserVirtuals> {
-	verifyCredentials(
-		email: string,
-		password: string,
-	): Promise<
-		HydratedDocument<
-			IUser & Required<{ _id: Schema.Types.ObjectId }>,
-			IUserMethods & IUserVirtuals
-		>
-	>; // Verifies user credentials
-}
-
-export type UserType = HydratedDocument<IUser, IUserMethods & IUserVirtuals>;
-
-export type UserMediaTypeKeys = "avatar" | "backgroundImage";
-
-export type UserPartialDeleteTypeKeys = "bio" | "avatar" | "backgroundImage";
-
-export type UserRegularPatchTypeKeys =
-	| "displayName"
-	| "bio"
-	| "avatar"
-	| "backgroundImage"
-	| "settings";
-
-export type UserImortantPatchTypeKeys = "username" | "email";
-
-export type UserOptionalTypeKeys = "bio";
 const schemaOptions: object = {
 	toJSON: {
 		virtuals: true,
@@ -129,22 +43,13 @@ const UserSchema = new mongoose.Schema<
 			type: String,
 			unique: true,
 			required: true,
-			maxLength: [64, "Username is longer than 64 characters."],
+			maxLength: [USERNAME_RULES.MAX_LENGTH, `Username is longer than ${USERNAME_RULES.MAX_LENGTH} characters.`],
 			trim: true,
-			async validate(value: string) {
-				const usernameErrors = [];
-
-				if (validator.contains(value, " "))
-					usernameErrors.push("Username contains whitespace");
-				if (!value.match(/^[0-9a-zA-Z\s]+$/))
-					usernameErrors.push("Username contains non-alphanumeric characters");
-				if (usernameErrors.length)
-					throw new ErrorAO(usernameErrors, "username");
-			},
+			validate: validateUsername
 		},
 		displayName: {
 			type: String,
-			maxLength: [128, "Display Name is longer than 128 characters."],
+			maxLength: [DISPLAY_NAME_MAX_LENGTH, `Display Name is longer than ${DISPLAY_NAME_MAX_LENGTH} characters.`],
 			default: "",
 			trim: true,
 		},
@@ -152,37 +57,20 @@ const UserSchema = new mongoose.Schema<
 			type: String,
 			unique: true,
 			required: true,
-			maxLength: [254, "Email is longer than 254 characters."],
+			maxLength: [EMAIL_MAX_LENGTH, `Email is longer than ${EMAIL_MAX_LENGTH} characters.`],
 			lowercase: true,
 			trim: true,
-			async validate(value: string) {
-				if (!validator.isEmail(value))
-					throw new ErrorAO(["Invalid email"], "email");
-			},
+			validate: validateEmail
 		},
 		password: {
 			type: String,
 			required: true,
 			maxLength: 254,
-			async validate(value: string) {
-				const passwordErrorsList = [];
-				if (value.length < 10)
-					passwordErrorsList.push("Must be at least 10 characters.");
-				if (!/[A-Z]/.test(value))
-					passwordErrorsList.push("Must contain an uppercase letter.");
-				if (!/[a-z]/.test(value))
-					passwordErrorsList.push("Must contain a lower letter.");
-				if (!/\d/.test(value)) passwordErrorsList.push("Must contain a digit.");
-				if (!/[!@#$%^&*(),.?":{}|<>]/.test(value))
-					passwordErrorsList.push("Must contain a special character.");
-
-				if (passwordErrorsList.length)
-					throw new ErrorAO(passwordErrorsList, "password");
-			},
+			validate: validatePassword
 		},
 		bio: {
 			type: String,
-			maxLength: [400, "Bio is longer than 400 characters."],
+			maxLength: [BIO_MAX_LENGTH, `Bio is longer than ${BIO_MAX_LENGTH} characters.`],
 			default: "",
 			trim: true,
 		},
@@ -191,38 +79,12 @@ const UserSchema = new mongoose.Schema<
 			enum: ["user", "moderator", "admin"],
 			default: "user",
 		},
-		sessions: [
-			{
-				token: {
-					type: String,
-					required: true,
-				},
-				createdAt: {
-					type: Date,
-					default: Date.now,
-				},
-				userAgent: {
-					type: String,
-					default: null,
-				},
-				ipAddress: {
-					type: String,
-					default: null,
-				},
-				expiresAt: {
-					type: Date,
-					default: null,
-				},
-				deviceInfo: {
-					type: String,
-					default: null,
-				},
-				location: {
-					type: String,
-					default: null,
-				},
-			},
-		],
+		tokens: [{
+			token: {
+				type: String,
+				required: true
+			}
+		}],
 		avatar: {
 			type: String,
 			default: null,
@@ -277,30 +139,30 @@ UserSchema.virtual("posts", {
 	foreignField: "user",
 });
 
-// Method to generate JWT token for user authentication
+// Simplified token generation method
 UserSchema.method(
-	"generateSession",
-	async function generateSession(this: UserType, req: Request) {
-		const session = {
-			token: jwt.sign(
-				{ id: (this._id as unknown as string).toString() },
-				process?.env?.JWT_STRING as Secret,
-			),
-			createdAt: new Date(),
-			userAgent: req.headers["user-agent"] || "unknown",
-			ipAddress: req.ip,
-			deviceInfo: Array.isArray(req.headers["device-info"])
-				? req.headers["device-info"][0]
-				: req.headers["device-info"] || "unknown",
-			location: req.headers.location || "unknown",
-			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
-		};
-		this.sessions = (Array.isArray(this.sessions) ? this.sessions : []).concat(
-			session,
+	"generateToken",
+	async function generateToken(this: UserType) {
+		const token = jwt.sign(
+			{ id: (this._id as unknown as string).toString() },
+			process?.env?.JWT_STRING as Secret,
+			{ expiresIn: TOKEN_EXPIRY }
 		);
+
+		this.tokens = this.tokens.concat({ token });
 		await this.save();
-		return session;
-	},
+
+		return token;
+	}
+);
+
+// Add method to remove token (for logout)
+UserSchema.method(
+	"removeToken",
+	async function removeToken(this: UserType, tokenToRemove: string) {
+		this.tokens = this.tokens.filter(({ token }) => token !== tokenToRemove);
+		await this.save();
+	}
 );
 
 // Method to limit user data for JSON response
@@ -373,7 +235,7 @@ UserSchema.static(
 UserSchema.pre(
 	"deleteOne",
 	{ document: true, query: false },
-	async function preRemove(this: UserType, next: NextFunction) {
+	async function preRemove(this: UserType, next: CallbackWithoutResultAndOptionalError) {
 		await this.populate("posts");
 		for (const postID of this.posts) {
 			const post = await Post.findById(postID);
@@ -393,7 +255,7 @@ UserSchema.pre(
 // Middleware to handle pre-save operations
 UserSchema.pre(
 	"save",
-	async function preSave(this: UserType, next: NextFunction) {
+	async function preSave(this: UserType, next: CallbackWithoutResultAndOptionalError) {
 		if (this.isModified("password")) {
 			const hashedPassword = await bcrypt.hash(this.password as string, 8);
 			this.formerPasswords = Array.isArray(this.formerPasswords)

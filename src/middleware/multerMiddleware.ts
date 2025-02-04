@@ -108,7 +108,7 @@ const saveFilesToDisk = wrap(
 
 		for (const mediaType in filesGroupedByMediaType) {
 			const files = filesGroupedByMediaType[mediaType];
-			const mediaFolderPath = path.join(__dirname, "../../media", mediaType);
+			const mediaFolderPath = path.join(process.cwd(), "/media/", mediaType);
 
 			if (!fs.existsSync(mediaFolderPath)) {
 				fs.mkdirSync(mediaFolderPath, { recursive: true });

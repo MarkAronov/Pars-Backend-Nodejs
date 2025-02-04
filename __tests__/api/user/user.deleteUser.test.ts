@@ -2,8 +2,8 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
-import app from "../../../src/app";
 import { User } from "../../../src/api/user/user.model";
+import app from "../../../src/app";
 
 describe("User Delete", async () => {
 	const userID = new mongoose.Types.ObjectId();
@@ -12,7 +12,7 @@ describe("User Delete", async () => {
 		email: "deleteUserTest@testing.com",
 		password: "Password123@",
 		_id: userID,
-		sessions: [
+		tokens: [
 			{
 				token: jwt.sign(
 					{ id: userID },
@@ -31,7 +31,7 @@ describe("User Delete", async () => {
 	it("should delete a user", async () => {
 		const response = await request(app)
 			.delete("/user")
-			.set("Authorization", `Bearer ${testUser.sessions[0].token}`);
+			.set("Authorization", `Bearer ${testUser.tokens[0].token}`);
 		expect(response.status).toBe(200);
 		const userExists = await User.findById(userID);
 		expect(userExists).toBeNull();

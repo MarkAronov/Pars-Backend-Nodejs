@@ -4,8 +4,9 @@ import { fileTypeFromFile } from "file-type";
 import type { Request } from "src/commom/generalTypes";
 import { wrap } from "src/utils/generalUtils";
 import { Post } from "../post/post.model";
-import type { PostType } from "../post/post.model";
-import { User, type UserType } from "../user/user.model";
+import type { PostType } from "../post/post.types";
+import { User } from "../user/user.model";
+import type { UserType } from "../user/user.types";
 
 export const search = wrap(async (req: Request, res: Response) => {
 	const results: { users: UserType[]; posts: PostType[] } = {

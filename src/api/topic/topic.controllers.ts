@@ -2,7 +2,7 @@ import type { Response } from "express";
 import type { Request } from "src/commom/generalTypes";
 import { ErrorAO, wrap } from "src/utils/generalUtils";
 import { Topic } from "./topic.model";
-import type { TopicMediaTypeKey } from "./topic.model";
+import type { TopicMediaTypeKey } from "./topic.types";
 
 export const createTopic = wrap(async (req: Request, res: Response) => {
 	const createdTopic = new Topic(req.body);
